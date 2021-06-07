@@ -258,6 +258,7 @@ namespace DocumentTranslationService.Core
             logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} END - Documents downloaded: {sizeInBytes} bytes in {count} files.");
             if (!Nodelete) await DeleteContainersAsync();
             logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} Run: Exiting.");
+            logger.Close();
             #endregion
         }
 

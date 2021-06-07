@@ -9,24 +9,41 @@ namespace DocumentTranslationService.Core
         private const string AppName = "Document Translation";
         private const string logFileName = "doctrLog.txt";
         private readonly StreamWriter streamWriter;
+        private readonly string filename;
 
-        public Logger()
+        internal Logger()
         {
-            Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName);
-            string filename = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName + Path.DirectorySeparatorChar + logFileName;
+            filename = Path.GetTempFileName();
             streamWriter = File.CreateText(filename);
             streamWriter.AutoFlush = true;
         }
 
-        public void WriteLine(string line)
+        ~Logger()
+        {
+            Close();
+        }
+
+        internal void WriteLine(string line)
         {
             Debug.WriteLine(line);
             streamWriter.WriteLine($"{DateTime.Now}: {line}");
         }
-        public void WriteLine()
+        internal void WriteLine()
         {
             streamWriter.WriteLine();
         }
 
+        internal void Close()
+        {
+            Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName);
+            string finalfilename = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName + Path.DirectorySeparatorChar + logFileName;
+            try
+            {
+                streamWriter.Close();
+                File.Copy(filename, finalfilename, true);
+                File.Delete(filename);
+            }
+            catch { };
+        }
     }
 }
