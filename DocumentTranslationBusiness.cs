@@ -73,6 +73,12 @@ namespace DocumentTranslationService.Core
 
         public event EventHandler<string> OnContainerCreationFailure;
 
+        /// <summary>
+        /// Fires if the file could not be read.
+        /// <para>File name</para>
+        /// </summary>
+        public event EventHandler<string> OnFileReadError;
+
         private readonly Logger logger = new();
 
         #endregion Properties
@@ -191,7 +197,16 @@ namespace DocumentTranslationService.Core
             Debug.WriteLine("Awaiting document upload task completion.");
             await Task.WhenAll(uploadTasks);
             //Upload Glossaries
-            var result = await glossary.UploadAsync(TranslationService.StorageConnectionString, containerNameBase);
+            try
+            {
+                var result = await glossary.UploadAsync(TranslationService.StorageConnectionString, containerNameBase);
+            }
+            catch(System.IO.IOException ex)
+            {
+                logger.WriteLine(ex.Message);
+                OnFileReadError?.Invoke(this, ex.Message);
+                throw;
+            }
             OnUploadComplete?.Invoke(this, (count, sizeInBytes));
             logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} END - Document upload. {sizeInBytes} bytes in {count} documents.");
             #endregion
