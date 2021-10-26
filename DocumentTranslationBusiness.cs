@@ -79,6 +79,11 @@ namespace DocumentTranslationService.Core
         /// </summary>
         public event EventHandler<string> OnFileReadError;
 
+        /// <summary>
+        /// Fires each time there is a status pull with a response from the service. 
+        /// </summary>
+        public event EventHandler OnHeartBeat;
+
         private readonly Logger logger = new();
 
         #endregion Properties
@@ -258,6 +263,7 @@ namespace DocumentTranslationService.Core
             {
                 await Task.Delay(1000);
                 status = await TranslationService.CheckStatusAsync();
+                OnHeartBeat?.Invoke(this, EventArgs.Empty);
                 logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} Service status: {status.CreatedOn} {status.Status}");
                 if (status.LastModified != lastActionTime)
                 {
