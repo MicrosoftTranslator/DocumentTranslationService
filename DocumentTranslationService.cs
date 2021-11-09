@@ -39,7 +39,7 @@ namespace DocumentTranslationService.Core
         public string AzureResourceName { get; set; } = string.Empty;
 
         internal BlobContainerClient ContainerClientSource { get; set; }
-        internal BlobContainerClient ContainerClientTarget { get; set; }
+        internal Dictionary<string, BlobContainerClient> ContainerClientTargets { get; set; } = new();
         public DocumentTranslationOperation DocumentTranslationOperation { get => documentTranslationOperation; set => documentTranslationOperation = value; }
 
         private DocumentTranslationClient documentTranslationClient;

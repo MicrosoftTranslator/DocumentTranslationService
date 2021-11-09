@@ -135,6 +135,11 @@ namespace DocumentTranslationService.Core
         public bool Bidi { get; set; }
 
         /// <summary>
+        /// Indicates whether this language has been selected, for multi-language operations
+        /// </summary>
+        public bool IsChecked { get; set; }
+
+        /// <summary>
         /// Is this an experimental language? 
         /// </summary>
         public bool Experimental;
