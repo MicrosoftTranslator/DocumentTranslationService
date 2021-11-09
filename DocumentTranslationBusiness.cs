@@ -165,6 +165,7 @@ namespace DocumentTranslationService.Core
             TranslationService.ContainerClientSource = sourceContainer;
             List<Task> targetContainerTasks = new();
             Dictionary<string, BlobContainerClient> targetContainers = new();
+            TranslationService.ContainerClientTargets.Clear();
             foreach (string lang in tolanguages)
             {
                 BlobContainerClient targetContainer = new(TranslationService.StorageConnectionString, containerNameBase + "tgt" + lang);
@@ -304,7 +305,9 @@ namespace DocumentTranslationService.Core
                 if (string.IsNullOrEmpty(targetFolder)) directoryName = Path.GetDirectoryName(sourcefiles[0]) + "." + lang;
                 else
                     if (targetFolder.Contains("*")) directoryName = targetFolder.Replace("*", lang);
-                    else directoryName = targetFolder + "." + lang;
+                else
+                        if (tolanguages.Length == 1) directoryName = targetFolder;
+                        else directoryName = targetFolder + "." + lang;
                 DirectoryInfo directory = Directory.CreateDirectory(directoryName);
                 List<Task> downloads = new();
                 using (System.Threading.SemaphoreSlim semaphore = new(100))
