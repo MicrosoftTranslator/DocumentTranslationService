@@ -105,7 +105,7 @@ namespace DocumentTranslationService.Core
         /// <param name="tolanguage">A single target language.</param>
         /// <param name="glossaryfiles">The glossary files.</param>
         /// <returns></returns>
-        public async Task RunAsync(List<string> filestotranslate, string fromlanguage, string tolanguage, List<string> glossaryfiles = null, string targetFolder = null)
+        public async Task RunAsync(List<string> filestotranslate, string fromlanguage, string[] tolanguages, List<string> glossaryfiles = null, string targetFolder = null)
         {
             Stopwatch stopwatch = new();
             stopwatch.Start();
@@ -144,7 +144,7 @@ namespace DocumentTranslationService.Core
                 logger.WriteLine("Nothing left to translate.");
                 throw new ArgumentNullException(nameof(filestotranslate), "List filtered to nothing.");
             }
-            if (!TranslationService.Languages.ContainsKey(tolanguage)) throw new ArgumentException("Invalid 'to' language.", nameof(tolanguage));
+            if (!TranslationService.Languages.ContainsKey(tolanguages[0])) throw new ArgumentException("Invalid 'to' language.", nameof(tolanguages));
             #endregion
 
             #region Create the containers
@@ -163,9 +163,15 @@ namespace DocumentTranslationService.Core
             }
             var sourceContainerTask = sourceContainer.CreateIfNotExistsAsync();
             TranslationService.ContainerClientSource = sourceContainer;
-            BlobContainerClient targetContainer = new(TranslationService.StorageConnectionString, containerNameBase + "tgt");
-            var targetContainerTask = targetContainer.CreateIfNotExistsAsync();
-            TranslationService.ContainerClientTarget = targetContainer;
+            List<Task> targetContainerTasks = new();
+            Dictionary<string, BlobContainerClient> targetContainers = new();
+            foreach (string lang in tolanguages)
+            {
+                BlobContainerClient targetContainer = new(TranslationService.StorageConnectionString, containerNameBase + "tgt" + lang);
+                targetContainerTasks.Add(targetContainer.CreateIfNotExistsAsync());
+                TranslationService.ContainerClientTargets.Add(lang, targetContainer);
+                targetContainers.Add(lang, targetContainer);
+            }
             Glossary glossary = new(TranslationService, glossaryfiles);
             this.Glossary = glossary;
             #endregion
@@ -218,25 +224,32 @@ namespace DocumentTranslationService.Core
 
             #region Translate the container content
             Uri sasUriSource = sourceContainer.GenerateSasUri(BlobContainerSasPermissions.All, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
-            await targetContainerTask;
-            Uri sasUriTarget = targetContainer.GenerateSasUri(BlobContainerSasPermissions.All, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
+            await Task.WhenAll(targetContainerTasks);
+            Dictionary<string, Uri> sasUriTargets = new();
+            foreach (string lang in tolanguages)
+            {
+                sasUriTargets.Add(lang, targetContainers[lang].GenerateSasUri(BlobContainerSasPermissions.All, DateTimeOffset.UtcNow + TimeSpan.FromHours(5)));
+            }
             TranslationSource translationSource = new(sasUriSource);
             if (!(string.IsNullOrEmpty(fromlanguage)))
             {
                 if (fromlanguage.ToLowerInvariant() == "auto") fromlanguage = null;
                 else translationSource.LanguageCode = fromlanguage;
             }
-            TranslationTarget translationTarget = new(sasUriTarget, tolanguage);
-            if (glossary.Glossaries is not null)
-            {
-                foreach (var glos in glossary.Glossaries) translationTarget.Glossaries.Add(glos.Value);
-            }
-            if (TranslationService.Category is not null)
-            {
-                translationTarget.CategoryId = TranslationService.Category;
-            }
             List<TranslationTarget> translationTargets = new();
-            translationTargets.Add(translationTarget);
+            foreach (string lang in tolanguages)
+            {
+                TranslationTarget translationTarget = new(sasUriTargets[lang], lang);
+                if (glossary.Glossaries is not null)
+                {
+                    foreach (var glos in glossary.Glossaries) translationTarget.Glossaries.Add(glos.Value);
+                }
+                if (TranslationService.Category is not null)
+                {
+                    translationTarget.CategoryId = TranslationService.Category;
+                }
+                translationTargets.Add(translationTarget);
+            }
             DocumentTranslationInput input = new(translationSource, translationTargets);
 
             try
@@ -252,7 +265,7 @@ namespace DocumentTranslationService.Core
             if (TranslationService.DocumentTranslationOperation is null)
             {
                 logger.WriteLine("ERROR: Start of translation job failed.");
-                if (!Nodelete) await DeleteContainersAsync();
+                if (!Nodelete) await DeleteContainersAsync(tolanguages);
                 return;
             }
 
@@ -283,31 +296,36 @@ namespace DocumentTranslationService.Core
             #region Download the translations
             //Chance for optimization: Check status on the documents and start download immediately after each document is translated. 
             logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} START - document download.");
-            string directoryName;
-            if (string.IsNullOrEmpty(targetFolder)) directoryName = Path.GetDirectoryName(sourcefiles[0]) + "." + tolanguage;
-            else directoryName = targetFolder;
             count = 0;
             sizeInBytes = 0;
-            DirectoryInfo directory = Directory.CreateDirectory(directoryName);
-            List<Task> downloads = new();
-            using (System.Threading.SemaphoreSlim semaphore = new(100))
+            foreach (string lang in tolanguages)
             {
-                await foreach (var blobItem in TranslationService.ContainerClientTarget.GetBlobsAsync())
+                string directoryName;
+                if (string.IsNullOrEmpty(targetFolder)) directoryName = Path.GetDirectoryName(sourcefiles[0]) + "." + lang;
+                else
+                    if (targetFolder.Contains("*")) directoryName = targetFolder.Replace("*", lang);
+                    else directoryName = targetFolder + "." + lang;
+                DirectoryInfo directory = Directory.CreateDirectory(directoryName);
+                List<Task> downloads = new();
+                using (System.Threading.SemaphoreSlim semaphore = new(100))
                 {
-                    await semaphore.WaitAsync();
-                    downloads.Add(DownloadBlobAsync(directory, blobItem, tolanguage));
-                    count++;
-                    sizeInBytes += (long)blobItem.Properties.ContentLength;
-                    semaphore.Release();
+                    await foreach (var blobItem in TranslationService.ContainerClientTargets[lang].GetBlobsAsync())
+                    {
+                        await semaphore.WaitAsync();
+                        downloads.Add(DownloadBlobAsync(directory, blobItem, lang));
+                        count++;
+                        sizeInBytes += (long)blobItem.Properties.ContentLength;
+                        semaphore.Release();
+                    }
                 }
+                await Task.WhenAll(downloads);
+                this.TargetFolder = directoryName;
             }
-            await Task.WhenAll(downloads);
             #endregion
-            this.TargetFolder = directoryName;
             #region final
             OnDownloadComplete?.Invoke(this, (count, sizeInBytes));
             logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} END - Documents downloaded: {sizeInBytes} bytes in {count} files.");
-            if (!Nodelete) await DeleteContainersAsync();
+            if (!Nodelete) await DeleteContainersAsync(tolanguages);
             var finalResults = await finalResultsTask;
             OnFinalResults?.Invoke(this, CharactersCharged(finalResults));
             StringBuilder sb = new();
@@ -356,7 +374,7 @@ namespace DocumentTranslationService.Core
         /// <returns>Task</returns>
         private async Task DownloadBlobAsync(DirectoryInfo directory, BlobItem blobItem, string tolanguage)
         {
-            BlobClient blobClient = new(TranslationService.StorageConnectionString, TranslationService.ContainerClientTarget.Name, blobItem.Name);
+            BlobClient blobClient = new(TranslationService.StorageConnectionString, TranslationService.ContainerClientTargets[tolanguage].Name, blobItem.Name);
             BlobDownloadInfo blobDownloadInfo = await blobClient.DownloadAsync();
             FileStream downloadFileStream;
             try
@@ -410,13 +428,14 @@ namespace DocumentTranslationService.Core
         /// Delete the containers created by this instance.
         /// </summary>
         /// <returns>The task only</returns>
-        private async Task DeleteContainersAsync()
+        private async Task DeleteContainersAsync(string[] tolanguages)
         {
             logger.WriteLine("START - Container deletion.");
             List<Task> deletionTasks = new();
             //delete the containers of this run
             deletionTasks.Add(TranslationService.ContainerClientSource.DeleteAsync());
-            deletionTasks.Add(TranslationService.ContainerClientTarget.DeleteAsync());
+            foreach (string lang in tolanguages)
+                deletionTasks.Add(TranslationService.ContainerClientTargets[lang].DeleteAsync());
             deletionTasks.Add(Glossary.DeleteAsync());
             if (DateTime.Now.Millisecond < 100) deletionTasks.Add(ClearOldContainersAsync());  //Clear out old stuff ~ every 10th time. 
             await Task.WhenAll(deletionTasks);
