@@ -146,9 +146,9 @@ namespace DocumentTranslationService.Core
             return documentTranslationOperation.Id;
         }
 
-        public async Task<List<DocumentStatus>> GetFinalResultsAsync()
+        public async Task<List<DocumentStatusResult>> GetFinalResultsAsync()
         {
-            List<DocumentStatus> documentStatuses = new();
+            List<DocumentStatusResult> documentStatuses = new();
             await foreach (var document in documentTranslationOperation.GetValuesAsync(cancellationToken))
             {
                 documentStatuses.Add(document);

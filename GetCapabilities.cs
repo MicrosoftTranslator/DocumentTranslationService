@@ -12,7 +12,7 @@ namespace DocumentTranslationService.Core
         /// <summary>
         /// Holds the list of file formats after initial retrieval from Service
         /// </summary>
-        public IReadOnlyList<FileFormat> FileFormats { get; private set; }
+        public IReadOnlyList<DocumentTranslationFileFormat> FileFormats { get; private set; }
 
         public HashSet<string> Extensions { get; private set; } = new();
 
@@ -20,22 +20,22 @@ namespace DocumentTranslationService.Core
 
         public event EventHandler OnFileFormatsUpdate;
 
-        public IReadOnlyList<FileFormat> GlossaryFormats { get; private set; }
+        public IReadOnlyList<DocumentTranslationFileFormat> GlossaryFormats { get; private set; }
 
         public event EventHandler OnGlossaryFormatsUpdate;
 
-        public async Task<IReadOnlyList<FileFormat>> GetDocumentFormatsAsync()
+        public async Task<IReadOnlyList<DocumentTranslationFileFormat>> GetDocumentFormatsAsync()
         {
             if (FileFormats?.Count > 0) return FileFormats;
             else return await GetFormatsInternal();
         }
 
-        private async Task<IReadOnlyList<FileFormat>> GetFormatsInternal()
+        private async Task<IReadOnlyList<DocumentTranslationFileFormat>> GetFormatsInternal()
         {
             if (String.IsNullOrEmpty(AzureResourceName)) throw new CredentialsException("name");
             for (int i = 0; i < 3; i++)
             {
-                Azure.Response<IReadOnlyList<FileFormat>> result = null;
+                Azure.Response<IReadOnlyList<DocumentTranslationFileFormat>> result = null;
                 try
                 {
                     result = await documentTranslationClient.GetSupportedDocumentFormatsAsync();
@@ -68,17 +68,17 @@ namespace DocumentTranslationService.Core
             return null;
         }
 
-        public async Task<IReadOnlyList<FileFormat>> GetGlossaryFormatsAsync()
+        public async Task<IReadOnlyList<DocumentTranslationFileFormat>> GetGlossaryFormatsAsync()
         {
             if (GlossaryFormats?.Count > 0) return GlossaryFormats;
             else return await GetGlossaryFormatsInternal();
         }
 
-        private async Task<IReadOnlyList<FileFormat>> GetGlossaryFormatsInternal()
+        private async Task<IReadOnlyList<DocumentTranslationFileFormat>> GetGlossaryFormatsInternal()
         {
             for (int i = 0; i < 3; i++)
             {
-                Azure.Response<IReadOnlyList<FileFormat>> result = null;
+                Azure.Response<IReadOnlyList<DocumentTranslationFileFormat>> result = null;
                 try
                 {
                     result = await documentTranslationClient.GetSupportedGlossaryFormatsAsync();

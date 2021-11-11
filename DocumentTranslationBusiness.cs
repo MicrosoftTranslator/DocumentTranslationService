@@ -290,7 +290,7 @@ namespace DocumentTranslationService.Core
                   (status.DocumentsInProgress != 0)
                 ||(!status.HasCompleted));
             OnStatusUpdate?.Invoke(this, new StatusResponse(status));
-            Task<List<DocumentStatus>> finalResultsTask = TranslationService.GetFinalResultsAsync();
+            Task<List<DocumentStatusResult>> finalResultsTask = TranslationService.GetFinalResultsAsync();
             if (status.Status == DocumentTranslationStatus.ValidationFailed) return;
             #endregion
 
@@ -340,7 +340,7 @@ namespace DocumentTranslationService.Core
                     thereWereErrors = true;
                     sb.Append(ToDisplayForm(documentStatus.SourceDocumentUri.LocalPath) + "\t");
                     sb.Append(documentStatus.Error.Message);
-                    sb.AppendLine(" (" + documentStatus.Error.ErrorCode + ")");
+                    sb.AppendLine(" (" + documentStatus.Error.Code + ")");
                 }
             }
             if (thereWereErrors)
@@ -358,7 +358,7 @@ namespace DocumentTranslationService.Core
             return splits[^1];
         }
 
-        private long CharactersCharged(List<DocumentStatus> finalResults)
+        private long CharactersCharged(List<DocumentStatusResult> finalResults)
         {
             long characterscharged = 0;
             foreach (var result in finalResults)
