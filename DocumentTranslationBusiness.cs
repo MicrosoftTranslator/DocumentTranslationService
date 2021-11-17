@@ -168,7 +168,7 @@ namespace DocumentTranslationService.Core
             TranslationService.ContainerClientTargets.Clear();
             foreach (string lang in tolanguages)
             {
-                BlobContainerClient targetContainer = new(TranslationService.StorageConnectionString, containerNameBase + "tgt" + lang);
+                BlobContainerClient targetContainer = new(TranslationService.StorageConnectionString, containerNameBase + "tgt" + lang.ToLowerInvariant());
                 targetContainerTasks.Add(targetContainer.CreateIfNotExistsAsync());
                 TranslationService.ContainerClientTargets.Add(lang, targetContainer);
                 targetContainers.Add(lang, targetContainer);
