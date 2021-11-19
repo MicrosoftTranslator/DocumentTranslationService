@@ -339,6 +339,7 @@ namespace DocumentTranslationService.Core
                 {
                     thereWereErrors = true;
                     sb.Append(ToDisplayForm(documentStatus.SourceDocumentUri.LocalPath) + "\t");
+                    sb.Append(documentStatus.TranslatedToLanguageCode + "\t");
                     sb.Append(documentStatus.Error.Message);
                     sb.AppendLine(" (" + documentStatus.Error.Code + ")");
                 }

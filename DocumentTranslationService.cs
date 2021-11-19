@@ -149,12 +149,12 @@ namespace DocumentTranslationService.Core
         public async Task<List<DocumentStatusResult>> GetFinalResultsAsync()
         {
             List<DocumentStatusResult> documentStatuses = new();
-            await foreach (var document in documentTranslationOperation.GetValuesAsync(cancellationToken))
+            Debug.WriteLine("Final results:");
+            await foreach (DocumentStatusResult document in documentTranslationOperation.GetValuesAsync(cancellationToken))
             {
                 documentStatuses.Add(document);
+                Debug.WriteLine($"{document.SourceDocumentUri}\t{document.Error}\t{document.Status}\t{document.TranslatedToLanguageCode}");
             }
-            Debug.WriteLine("Final results:");
-            Debug.WriteLine(JsonSerializer.Serialize(documentStatuses, new JsonSerializerOptions() { IncludeFields = true, WriteIndented = true }));
             return documentStatuses;
         }
 
