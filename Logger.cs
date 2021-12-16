@@ -35,8 +35,7 @@ namespace DocumentTranslationService.Core
 
         internal void Close()
         {
-            Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName);
-            string finalfilename = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName + Path.DirectorySeparatorChar + logFileName;
+            string finalfilename = GetFinalFilename();
             try
             {
                 streamWriter.Close();
@@ -44,6 +43,21 @@ namespace DocumentTranslationService.Core
                 File.Delete(filename);
             }
             catch { };
+        }
+
+        private static string GetFinalFilename()
+        {
+            string finalfilename;
+            if (OperatingSystem.IsWindows())
+            {
+                Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName);
+                finalfilename = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName + Path.DirectorySeparatorChar + logFileName;
+            }
+            else
+            {
+                finalfilename = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + Path.DirectorySeparatorChar + AppName + "_" + Path.DirectorySeparatorChar + logFileName;
+            }
+            return finalfilename;
         }
     }
 }

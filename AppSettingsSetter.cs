@@ -38,7 +38,7 @@ namespace DocumentTranslationService.Core
             string appsettingsJson;
             try
             {
-                if (string.IsNullOrEmpty(filename)) filename = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName + Path.DirectorySeparatorChar + AppSettingsFileName;
+                if (string.IsNullOrEmpty(filename)) filename = GetSettingsFilename();
                 appsettingsJson = File.ReadAllText(filename);
             }
             catch (Exception ex)
@@ -70,11 +70,33 @@ namespace DocumentTranslationService.Core
         {
             if (string.IsNullOrEmpty(filename))
             {
+                filename = GetSettingsFilename();
+            }
+            try
+            {
+                File.WriteAllText(filename, GetJson(settings));
+            }
+            catch (IOException)
+            {
+                Console.WriteLine("ERROR: Failed writing settings to " + filename);
+            }
+            return;
+        }
+
+        private static string GetSettingsFilename()
+        {
+            string filename;
+            if (OperatingSystem.IsWindows())
+            {
                 Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName);
                 filename = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName + Path.DirectorySeparatorChar + AppSettingsFileName;
             }
-            File.WriteAllText(filename, GetJson(settings));
-            return;
+            else
+            {
+                filename = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + Path.DirectorySeparatorChar + AppName + "_" + AppSettingsFileName;
+            }
+
+            return filename;
         }
 
 
