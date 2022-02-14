@@ -10,7 +10,7 @@ namespace DocumentTranslationService.Core
         {
             List<AzureRegion> azureRegions = new();
             string regionsText = File.ReadAllText(AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + "AzureRegionsList.tsv");
-            if (regionsText?.Length < 100) throw new Exception("Regions list not found or corrupt. File AzureRegionsList.tsv");
+            if ((regionsText is null) || (regionsText?.Length < 100)) throw new Exception("Regions list not found or corrupt. File: AzureRegionsList.tsv");
             azureRegions.Clear();
             azureRegions.Add(new AzureRegion("Global", "global"));
             string[] lines = regionsText.Split("\r\n");
