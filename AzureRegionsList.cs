@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Text;
 
 namespace DocumentTranslationService.Core
 {
@@ -9,8 +9,8 @@ namespace DocumentTranslationService.Core
         public static List<AzureRegion> ReadAzureRegions()
         {
             List<AzureRegion> azureRegions = new();
-            string regionsText = File.ReadAllText(AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + "AzureRegionsList.tsv");
-            if ((regionsText is null) || (regionsText?.Length < 100)) throw new Exception("Regions list not found or corrupt. File: AzureRegionsList.tsv");
+            string regionsText = Encoding.UTF8.GetString(Properties.Resources.AzureRegionsList);
+            if ((regionsText is null) || (regionsText?.Length < 100)) throw new Exception("Regions list not found or corrupt. Resource: AzureRegionsList");
             azureRegions.Clear();
             azureRegions.Add(new AzureRegion("Global", "global"));
             string[] lines = regionsText.Split("\r\n");
