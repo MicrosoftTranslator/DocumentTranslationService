@@ -10,7 +10,6 @@ namespace DocumentTranslationService.Core
         {
             List<AzureRegion> azureRegions = new();
             string regionsText = Encoding.UTF8.GetString(Properties.Resources.AzureRegionsList);
-            if ((regionsText is null) || (regionsText?.Length < 100)) throw new Exception("Regions list not found or corrupt. Resource: AzureRegionsList");
             azureRegions.Clear();
             azureRegions.Add(new AzureRegion("Global", "global"));
             string[] lines = regionsText.Split("\r\n");
