@@ -30,6 +30,8 @@ namespace DocumentTranslationService.Core
             //Test the storage account
             credTestTasks.Add(TryCredentialsStorage());
             await Task.WhenAll(credTestTasks);
+            //Test for free subscription
+            await TryPaidSubscription();
         }
 
         private async Task TryCredentialsStorage()
@@ -43,7 +45,7 @@ namespace DocumentTranslationService.Core
             }
             catch (Exception ex)
             {
-                throw new CredentialsException("storage", ex);
+                throw new CredentialsException("Storage: " + ex.Message, ex);
             }
         }
 
@@ -58,11 +60,11 @@ namespace DocumentTranslationService.Core
             }
             catch (HttpRequestException ex)
             {
-                throw new CredentialsException("name", ex);
+                throw new CredentialsException("Resource Name: " + ex.Message, ex);
             }
             catch (System.UriFormatException ex)
             {
-                throw new CredentialsException("name", ex);
+                throw new CredentialsException("Resource Name: " + ex.Message, ex);
             }
         }
 
@@ -75,7 +77,21 @@ namespace DocumentTranslationService.Core
             HttpClient client = new();
             HttpResponseMessage response = await client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
-                throw new CredentialsException("key");
+                throw new CredentialsException("Invalid key, or key does not match region.");
+        }
+
+        private async Task TryPaidSubscription()
+        {
+            Azure.AI.Translation.Document.DocumentTranslationClient documentTranslationClient = new(new Uri("https://" + AzureResourceName + baseUriTemplate), new Azure.AzureKeyCredential(SubscriptionKey));
+
+            try
+            {
+                var result = await documentTranslationClient.GetSupportedDocumentFormatsAsync();
+            }
+            catch (Azure.RequestFailedException ex)
+            {
+                throw new CredentialsException(ex.Message);
+            }
         }
     }
 }

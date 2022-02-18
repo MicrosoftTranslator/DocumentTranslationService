@@ -92,8 +92,15 @@ namespace DocumentTranslationService.Core
             List<Task> tasks = new();
             tasks.Add(GetDocumentFormatsAsync());
             tasks.Add(GetGlossaryFormatsAsync());
-            await Task.WhenAll(tasks);
-            await GetLanguagesAsync();
+            try
+            {
+                await Task.WhenAll(tasks);
+                await GetLanguagesAsync();
+            }
+            catch (CredentialsException ex)
+            {
+                throw new CredentialsException(ex.Message, ex);
+            }
             if (OnInitializeComplete is not null) OnInitializeComplete(this, EventArgs.Empty);
         }
 
@@ -140,7 +147,7 @@ namespace DocumentTranslationService.Core
             catch (Azure.RequestFailedException ex)
             {
                 Debug.WriteLine("Request failed: " + ex.Source + ": " + ex.Message);
-                throw;
+                throw new Exception(ex.Message);
             }
             Debug.WriteLine("Translation Request submitted. Status: " + documentTranslationOperation.Status);
             return documentTranslationOperation.Id;

@@ -261,7 +261,12 @@ namespace DocumentTranslationService.Core
             catch (Azure.RequestFailedException ex)
             {
                 OnStatusUpdate?.Invoke(this, new StatusResponse(TranslationService.DocumentTranslationOperation, ex.ErrorCode + ": " + ex.Message));
-                logger.WriteLine(ex.ToString());
+                logger.WriteLine(ex.ErrorCode + ": " + ex.Message);
+            }
+            catch (Exception ex)
+            {
+                OnStatusUpdate?.Invoke(this, new StatusResponse(TranslationService.DocumentTranslationOperation, ex.Message));
+                logger.WriteLine(ex.Message);
             }
             if (TranslationService.DocumentTranslationOperation is null)
             {

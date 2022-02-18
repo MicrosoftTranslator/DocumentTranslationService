@@ -42,7 +42,7 @@ namespace DocumentTranslationService.Core
                 }
                 catch (Azure.RequestFailedException ex)
                 {
-                    if (ex.Status == 401 || ex.Status == 403) throw;
+                    if (ex.Status == 401 || ex.Status == 403) throw new CredentialsException(ex.Message, ex);
                 }
 
                 if (result?.Value.Count > 0)
@@ -85,7 +85,7 @@ namespace DocumentTranslationService.Core
                 }
                 catch(Azure.RequestFailedException ex)
                 {
-                    if (ex.Status == 401 || ex.Status == 403) throw;
+                    if (ex.Status == 401 || ex.Status == 403) throw new CredentialsException(ex.Message, ex);
                 }
 
                 if (result?.Value.Count > 0)
