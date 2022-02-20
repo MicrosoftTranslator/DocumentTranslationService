@@ -74,10 +74,10 @@ namespace DocumentTranslationService.Core
         public event EventHandler<string> OnContainerCreationFailure;
 
         /// <summary>
-        /// Fires if the file could not be read.
+        /// Fires if the file could not be read or written.
         /// <para>File name</para>
         /// </summary>
-        public event EventHandler<string> OnFileReadError;
+        public event EventHandler<string> OnFileReadWriteError;
 
         /// <summary>
         /// Fires each time there is a status pull with a response from the service. 
@@ -190,7 +190,18 @@ namespace DocumentTranslationService.Core
                 foreach (var filename in sourcefiles)
                 {
                     await semaphore.WaitAsync();
-                    FileStream fileStream = File.OpenRead(filename);
+                    FileStream fileStream;
+                    try
+                    {
+                        fileStream = File.OpenRead(filename);
+                    }
+                    catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+                    {
+                        logger.WriteLine(ex.Message);
+                        OnFileReadWriteError?.Invoke(this, ex.Message);
+                        if (!Nodelete) await DeleteContainersAsync(tolanguages);
+                        return;
+                    }
                     BlobClient blobClient = new(TranslationService.StorageConnectionString, TranslationService.ContainerClientSource.Name, Normalize(filename));
                     try
                     {
@@ -199,15 +210,28 @@ namespace DocumentTranslationService.Core
                         sizeInBytes += new FileInfo(fileStream.Name).Length;
                         semaphore.Release();
                     }
-                    catch (System.AggregateException e)
+                    catch (Exception ex) when (ex is AggregateException or Azure.RequestFailedException)
                     {
-                        logger.WriteLine($"Uploading file {fileStream.Name} failed with {e.Message}");
+                        logger.WriteLine($"Uploading file {fileStream.Name} failed with {ex.Message}");
+                        OnFileReadWriteError?.Invoke(this, ex.Message);
+                        if (!Nodelete) await DeleteContainersAsync(tolanguages);
+                        return;
                     }
                     logger.WriteLine($"File {filename} upload started.");
                 }
             }
             Debug.WriteLine("Awaiting document upload task completion.");
-            await Task.WhenAll(uploadTasks);
+            try
+            {
+                await Task.WhenAll(uploadTasks);
+            }
+            catch (Exception ex)
+            {
+                logger.WriteLine($"Uploading files failed with {ex.Message}");
+                OnFileReadWriteError?.Invoke(this, ex.Message);
+                if (!Nodelete) await DeleteContainersAsync(tolanguages);
+                return;
+            }
             //Upload Glossaries
             try
             {
@@ -215,9 +239,10 @@ namespace DocumentTranslationService.Core
             }
             catch(System.IO.IOException ex)
             {
-                logger.WriteLine(ex.Message);
-                OnFileReadError?.Invoke(this, ex.Message);
-                throw;
+                logger.WriteLine($"Glossaries upload failed with {ex.Message}");
+                OnFileReadWriteError?.Invoke(this, ex.Message);
+                if (!Nodelete) await DeleteContainersAsync(tolanguages);
+                return;
             }
             OnUploadComplete?.Invoke(this, (count, sizeInBytes));
             logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} END - Document upload. {sizeInBytes} bytes in {count} documents.");
@@ -225,7 +250,17 @@ namespace DocumentTranslationService.Core
 
             #region Translate the container content
             Uri sasUriSource = sourceContainer.GenerateSasUri(BlobContainerSasPermissions.All, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
-            await Task.WhenAll(targetContainerTasks);
+            try
+            {
+                await Task.WhenAll(targetContainerTasks);
+            }
+            catch (Exception ex)
+            {
+                logger.WriteLine($"Target container creation failed with {ex.Message}");
+                OnFileReadWriteError?.Invoke(this, ex.Message);
+                if (!Nodelete) await DeleteContainersAsync(tolanguages);
+                return;
+            }
             Dictionary<string, Uri> sasUriTargets = new();
             foreach (string lang in tolanguages)
             {
@@ -312,8 +347,19 @@ namespace DocumentTranslationService.Core
                     if (targetFolder.Contains("*")) directoryName = targetFolder.Replace("*", lang);
                 else
                         if (tolanguages.Length == 1) directoryName = targetFolder;
-                        else directoryName = targetFolder + "." + lang;
-                DirectoryInfo directory = Directory.CreateDirectory(directoryName);
+                else directoryName = targetFolder + "." + lang;
+                DirectoryInfo directory = new(directoryName);
+                try
+                {
+                    directory = Directory.CreateDirectory(directoryName);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    logger.WriteLine(ex.Message);
+                    OnFileReadWriteError?.Invoke(this, ex.Message);
+                    if (!Nodelete) await DeleteContainersAsync(tolanguages);
+                    return;
+                }
                 List<Task> downloads = new();
                 using (System.Threading.SemaphoreSlim semaphore = new(100))
                 {
@@ -326,7 +372,15 @@ namespace DocumentTranslationService.Core
                         semaphore.Release();
                     }
                 }
-                await Task.WhenAll(downloads);
+                try
+                {
+                    await Task.WhenAll(downloads);
+                }
+                catch (Exception ex)
+                {
+                    logger.WriteLine("Download error: " + ex.Message);
+                    OnFileReadWriteError?.Invoke(this, "Download failure: " + ex.Message);
+                }
                 this.TargetFolder = directoryName;
             }
             #endregion
