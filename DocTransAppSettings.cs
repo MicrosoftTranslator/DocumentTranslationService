@@ -43,6 +43,7 @@ namespace DocumentTranslationService.Core
                 else return true;
             }
         }
+        public bool UseAzureGov { get; set; }
     }
 
     public class Connectionstrings

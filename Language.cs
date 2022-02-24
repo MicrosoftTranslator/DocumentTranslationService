@@ -46,7 +46,7 @@ namespace DocumentTranslationService.Core
         /// </summary>
         /// <param name="acceptLanguage">The language you want the language list in. Default is the thread locale</param>
         /// <returns>Task</returns>
-        private async Task GetLanguagesAsyncInternal(string acceptLanguage = null, bool showExperimental = false)
+        private async Task GetLanguagesAsyncInternal(string acceptLanguage = null, bool showExperimental = false, bool AzureGovernment = false)
         {
             if (acceptLanguage is null) acceptLanguage = System.Threading.Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName;
             //Cut this call short if we have everything and no change in language of the language names, or in the experimental state.
@@ -58,9 +58,10 @@ namespace DocumentTranslationService.Core
                 HttpRequestMessage request = new();
                 request.Method = HttpMethod.Get;
                 request.Headers.AcceptLanguage.Add(new System.Net.Http.Headers.StringWithQualityHeaderValue(acceptLanguage));
+                string AzureTLD = AzureGovernment ? "com" : "us";
                 request.RequestUri = showExperimental
-                    ? new Uri("https://api.cognitive.microsofttranslator.com/languages?api-version=3.0&scope=translation&flight=experimental")
-                    : new Uri("https://api.cognitive.microsofttranslator.com/languages?api-version=3.0&scope=translation");
+                    ? new Uri($"https://api.cognitive.microsofttranslator.{AzureTLD}/languages?api-version=3.0&scope=translation&flight=experimental")
+                    : new Uri($"https://api.cognitive.microsofttranslator.{AzureTLD}/languages?api-version=3.0&scope=translation");
                 HttpClient client = new();
                 HttpResponseMessage response = await client.SendAsync(request);
 

@@ -24,7 +24,10 @@ namespace DocumentTranslationService.Core
         /// <exception cref="KeyVaultAccessException"/>
         public async Task<DocTransAppSettings> GetKVCredentialsAsync()
         {
-            SecretClient client = new(new Uri("https://" + KeyVaultName + ".vault.azure.net/"), new DefaultAzureCredential());
+            string VaultUri;
+            if (KeyVaultName.Contains('.')) VaultUri = KeyVaultName;
+            else VaultUri = "https://" + KeyVaultName + ".vault.azure.net/";
+            SecretClient client = new(new Uri(VaultUri), new DefaultAzureCredential());
             List<string> secretNames = new() { "AzureRegion", "AzureResourceName", "StorageConnectionString", "SubscriptionKey" };
             List<Task<Azure.Response<KeyVaultSecret>>> tasks = new();
             Azure.Response<KeyVaultSecret>[] kvSecrets;

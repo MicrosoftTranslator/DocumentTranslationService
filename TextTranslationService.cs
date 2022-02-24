@@ -26,12 +26,11 @@ namespace DocumentTranslationService.Core
         public event EventHandler RetryingEvent;
 
         private const int maxrequestsize = 5000;   //service size is 5000
-        private const int maxelements = 100;
 
         /// <summary>
         /// End point address for the Translator API
         /// </summary>
-        public string EndPointAddress { get; set; } = "https://api.cognitive.microsofttranslator.com";
+        public string EndPointAddress { get { return UseAzureGov ? "https://api.cognitive.microsofttranslator.us" : "https://api.cognitive.microsofttranslator.com"; } }
         public static int Maxrequestsize { get => maxrequestsize; }
         
         public enum ContentType { plain, HTML };

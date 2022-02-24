@@ -38,6 +38,11 @@ namespace DocumentTranslationService.Core
         /// </summary>
         public string AzureResourceName { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Use Azure Government
+        /// </summary>
+        public bool UseAzureGov { get; set; }
+
         internal BlobContainerClient ContainerClientSource { get; set; }
         internal Dictionary<string, BlobContainerClient> ContainerClientTargets { get; set; } = new();
         public DocumentTranslationOperation DocumentTranslationOperation { get => documentTranslationOperation; set => documentTranslationOperation = value; }
@@ -88,7 +93,10 @@ namespace DocumentTranslationService.Core
         {
             if (String.IsNullOrEmpty(AzureResourceName)) throw new CredentialsException("name");
             if (String.IsNullOrEmpty(SubscriptionKey)) throw new CredentialsException("key");
-            documentTranslationClient = new(new Uri("https://" + AzureResourceName + baseUriTemplate), new Azure.AzureKeyCredential(SubscriptionKey));
+            string DocTransEndpoint;
+            if (!AzureResourceName.Contains('.')) DocTransEndpoint = "https://" + AzureResourceName + baseUriTemplate;
+            else DocTransEndpoint = AzureResourceName;
+            documentTranslationClient = new(new Uri(DocTransEndpoint), new Azure.AzureKeyCredential(SubscriptionKey));
             List<Task> tasks = new();
             tasks.Add(GetDocumentFormatsAsync());
             tasks.Add(GetGlossaryFormatsAsync());
