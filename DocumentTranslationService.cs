@@ -34,14 +34,14 @@ namespace DocumentTranslationService.Core
         public string AzureRegion { get; set; }
 
         /// <summary>
-        /// The name of the Azure Translator resource
+        /// The Uri of the Azure Document Translation endpoint
         /// </summary>
         public string AzureResourceName { get; set; } = string.Empty;
 
         /// <summary>
-        /// Use Azure Government
+        /// The URI of the Azure Text Translation endpoint
         /// </summary>
-        public bool UseAzureGov { get; set; }
+        public string TextTransUri { get; set; } = string.Empty;
 
         internal BlobContainerClient ContainerClientSource { get; set; }
         internal Dictionary<string, BlobContainerClient> ContainerClientTargets { get; set; } = new();
@@ -91,8 +91,9 @@ namespace DocumentTranslationService.Core
         /// <returns></returns>
         public async Task InitializeAsync()
         {
-            if (String.IsNullOrEmpty(AzureResourceName)) throw new CredentialsException("name");
-            if (String.IsNullOrEmpty(SubscriptionKey)) throw new CredentialsException("key");
+            if (string.IsNullOrEmpty(AzureResourceName)) throw new CredentialsException("name");
+            if (string.IsNullOrEmpty(SubscriptionKey)) throw new CredentialsException("key");
+            if (string.IsNullOrEmpty(TextTransUri)) TextTransUri = "https://api.cognitive.microsofttranslator.com/";
             string DocTransEndpoint;
             if (!AzureResourceName.Contains('.')) DocTransEndpoint = "https://" + AzureResourceName + baseUriTemplate;
             else DocTransEndpoint = AzureResourceName;

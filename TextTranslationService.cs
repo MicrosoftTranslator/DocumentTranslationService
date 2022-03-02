@@ -27,10 +27,6 @@ namespace DocumentTranslationService.Core
 
         private const int maxrequestsize = 5000;   //service size is 5000
 
-        /// <summary>
-        /// End point address for the Translator API
-        /// </summary>
-        public string EndPointAddress { get { return UseAzureGov ? "https://api.cognitive.microsofttranslator.us" : "https://api.cognitive.microsofttranslator.com"; } }
         public static int Maxrequestsize { get => maxrequestsize; }
         
         public enum ContentType { plain, HTML };
@@ -45,7 +41,7 @@ namespace DocumentTranslationService.Core
         /// <returns>JSON object of the detected languages</returns>
         public async Task<string> DetectAsync(string input)
         {
-            string uri = EndPointAddress + "/detect?api-version=3.0";
+            string uri = TextTransUri + "/detect?api-version=3.0";
             object[] body = new object[] { new { Text = input } };
             using HttpClient client = new();
             using HttpRequestMessage request = new();
@@ -182,16 +178,6 @@ namespace DocumentTranslationService.Core
             return sum;
         }
 
-
-        private static bool IsCustomCategory(string categoryID)
-        {
-            if (string.IsNullOrEmpty(categoryID)) return false;
-            string category = categoryID.ToLowerInvariant();
-            if (category == "general") return false;
-            if (category == "generalnn") return false;
-            return true;
-        }
-
         /// <summary>
         /// Translates a string.
         /// </summary>
@@ -237,7 +223,7 @@ namespace DocumentTranslationService.Core
         {
             string path = "/dictionary/lookup?api-version=3.0";
             string params_ = "&from=" + from + "&to=" + to;
-            string uri = EndPointAddress + path + params_;
+            string uri = TextTransUri + path + params_;
             object[] body = new object[] { new { Text = text } };
             using var client = new HttpClient();
             using var request = new HttpRequestMessage();
@@ -284,7 +270,7 @@ namespace DocumentTranslationService.Core
             if (String.IsNullOrEmpty(text) || String.IsNullOrWhiteSpace(text)) return null;
             string path = "/breaksentence?api-version=3.0";
             string params_ = "&language=" + languagecode;
-            string uri = EndPointAddress + path + params_;
+            string uri = TextTransUri + path + params_;
             object[] body = new object[] { new { Text = text.Substring(0, (text.Length < Maxrequestsize) ? text.Length : Maxrequestsize) } };
             string requestBody = JsonSerializer.Serialize(body);
             List<int> resultList = new();
@@ -386,7 +372,7 @@ namespace DocumentTranslationService.Core
             }
             if (thiscategory != null) params_ += "&category=" + System.Web.HttpUtility.UrlEncode(category);
             if (contentType == ContentType.HTML) params_ += "&textType=HTML";
-            string uri = EndPointAddress + path + params_;
+            string uri = TextTransUri + path + params_;
 
 
             ArrayList requestAL = new();

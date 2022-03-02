@@ -48,6 +48,9 @@ namespace DocumentTranslationService.Core
                     DocTransAppSettings settings = new();
                     settings.ConnectionStrings = new Connectionstrings();
                     settings.AzureRegion = "global";
+                    settings.TextTransEndpoint = "https://api.cognitive.microsofttranslator.com/";
+                    settings.AzureResourceName = "https://*.cognitiveservices.azure.com/";
+                    settings.ConnectionStrings.StorageConnectionString = "DefaultEndpointsProtocol=https;AccountName=*";
                     return settings;
                 }
                 throw;
@@ -62,7 +65,7 @@ namespace DocumentTranslationService.Core
                 Debug.WriteLine("Authentication: Using appsettings.json file to read credentials.");
                 SettingsReadComplete?.Invoke(null, EventArgs.Empty);
             }
-            if (result.AzureRegion is null) result.AzureRegion = "global";
+            if (string.IsNullOrEmpty(result.AzureRegion)) result.AzureRegion = "global";
             return result;
         }
 

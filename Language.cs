@@ -24,7 +24,12 @@ namespace DocumentTranslationService.Core
         private bool? lastShowExperimental = null;
         private string lastLanguage;
 
-
+        /// <summary>
+        /// Read the set of languages from the service and store in the Languages list.
+        /// This function can run before any authentication is set up, because the server side does not need authentication for this call.
+        /// </summary>
+        /// <param name="acceptLanguage">The language you want the language list in. Default is the thread locale</param>
+        /// <returns>Task</returns>
         public async Task GetLanguagesAsync(string acceptLanguage = null)
         {
             await GetLanguagesAsyncInternal(acceptLanguage, false);
@@ -42,26 +47,28 @@ namespace DocumentTranslationService.Core
 
 
         /// <summary>
-        /// Read the set of languages from the service and store in the Languages list
+        /// Read the set of languages from the service and store in the Languages list.
+        /// This function can run before any authentication is set up, because the server side does not need authentication for this call.
         /// </summary>
         /// <param name="acceptLanguage">The language you want the language list in. Default is the thread locale</param>
+        /// <param name="showExperimental">Whether to show the experimental languages</param>
         /// <returns>Task</returns>
-        private async Task GetLanguagesAsyncInternal(string acceptLanguage = null, bool showExperimental = false, bool AzureGovernment = false)
+        private async Task GetLanguagesAsyncInternal(string acceptLanguage = null, bool showExperimental = false)
         {
-            if (acceptLanguage is null) acceptLanguage = System.Threading.Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName;
+            if (string.IsNullOrEmpty(acceptLanguage)) acceptLanguage = System.Threading.Thread.CurrentThread.CurrentCulture.TwoLetterISOLanguageName;
             //Cut this call short if we have everything and no change in language of the language names, or in the experimental state.
             if ((acceptLanguage == lastLanguage) && (showExperimental == lastShowExperimental) && (Languages.Count > 10)) return;
             lastLanguage = acceptLanguage;
             lastShowExperimental = showExperimental;
+            string textTransUri = TextTransUri;
             for (int i = 0; i < 3; i++) //retry loop
             {
                 HttpRequestMessage request = new();
                 request.Method = HttpMethod.Get;
                 request.Headers.AcceptLanguage.Add(new System.Net.Http.Headers.StringWithQualityHeaderValue(acceptLanguage));
-                string AzureTLD = AzureGovernment ? "com" : "us";
                 request.RequestUri = showExperimental
-                    ? new Uri($"https://api.cognitive.microsofttranslator.{AzureTLD}/languages?api-version=3.0&scope=translation&flight=experimental")
-                    : new Uri($"https://api.cognitive.microsofttranslator.{AzureTLD}/languages?api-version=3.0&scope=translation");
+                    ? new Uri($"{textTransUri}/languages?api-version=3.0&scope=translation&flight=experimental")
+                    : new Uri($"{textTransUri}/languages?api-version=3.0&scope=translation");
                 HttpClient client = new();
                 HttpResponseMessage response = await client.SendAsync(request);
 
@@ -101,7 +108,9 @@ namespace DocumentTranslationService.Core
                     Debug.WriteLine($"Languages received: {Languages.Count}, Experimental: {showExperimental}");
                     return;
                 }
-                else await Task.Delay(2000); //wait two seconds before retry
+                else if (response.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.Unauthorized)
+                    textTransUri = "https://api.cognitive.microsofttranslator.us/"; //try Azure Gov in case Azure public is blocked. 
+                else await Task.Delay(1000); //wait one seconds before retry
             }
             return;
         }

@@ -24,7 +24,7 @@ namespace DocumentTranslationService.Core
         {
             List<Task> credTestTasks = new();
             //Test the subscription key
-            credTestTasks.Add(TryCredentialsKey(SubscriptionKey, AzureRegion, UseAzureGov));
+            credTestTasks.Add(TryCredentialsKey(SubscriptionKey, AzureRegion, TextTransUri));
             //Test the name of the resource
             credTestTasks.Add(TryCredentialsName());
             //Test the storage account
@@ -51,8 +51,9 @@ namespace DocumentTranslationService.Core
 
         private async Task TryCredentialsName()
         {
-            string DocTransEndpoint = string.Empty;
+            string DocTransEndpoint;
             if (!AzureResourceName.Contains('.')) DocTransEndpoint = "https://" + AzureResourceName + baseUriTemplate;
+            else DocTransEndpoint = AzureResourceName;
             try
             {
                 HttpRequestMessage request = new() { Method = HttpMethod.Get, RequestUri = new Uri(DocTransEndpoint + "/documents/formats") };
@@ -70,10 +71,10 @@ namespace DocumentTranslationService.Core
             }
         }
 
-        private static async Task TryCredentialsKey(string subscriptionKey, string azureRegion, bool UseAzureGov)
+        private static async Task TryCredentialsKey(string subscriptionKey, string azureRegion, string TextTransUri)
         {
-            string AzureTLD = UseAzureGov ? "us" : "com";
-            using HttpRequestMessage request = new() { Method = HttpMethod.Post, RequestUri = new Uri("https://api.cognitive.microsofttranslator." + AzureTLD + "/detect?api-version=3.0") };
+            if (string.IsNullOrEmpty(TextTransUri)) TextTransUri = "https://api.cognitive.microsofttranslator.com";
+            using HttpRequestMessage request = new() { Method = HttpMethod.Post, RequestUri = new Uri(TextTransUri + "/detect?api-version=3.0") };
             request.Headers.Add("Ocp-Apim-Subscription-Key", subscriptionKey);
             if (azureRegion?.ToLowerInvariant() != "global") request.Headers.Add("Ocp-Apim-Subscription-Region", azureRegion);
             request.Content = new StringContent("[{ \"Text\": \"English\" }]", Encoding.UTF8, "application/json");

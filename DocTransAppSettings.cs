@@ -7,7 +7,7 @@ namespace DocumentTranslationService.Core
     public class DocTransAppSettings
     {
         /// <summary>
-        /// Name of the Azure Translator resource
+        /// Azure Translator resource URI
         /// </summary>
         public string AzureResourceName { get; set; }
         /// <summary>
@@ -31,10 +31,14 @@ namespace DocumentTranslationService.Core
         /// </summary>
         public string AzureRegion { get; set; }
         /// <summary>
-        /// Holds the name of the Azure key vail to use instead of local settings.
+        /// Holds the URI of the Azure key vault to use instead of local settings.
         /// If not null or empty, other secrets and region will be ignored. 
         /// </summary>
         public string AzureKeyVaultName { get; set; }
+        /// <summary>
+        /// Holds the Text Translation Endpoint
+        /// </summary>
+        public string TextTransEndpoint { get; set; }
         public bool UsingKeyVault
         {
             get
@@ -43,7 +47,6 @@ namespace DocumentTranslationService.Core
                 else return true;
             }
         }
-        public bool UseAzureGov { get; set; }
     }
 
     public class Connectionstrings
