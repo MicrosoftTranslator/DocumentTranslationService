@@ -65,6 +65,9 @@ namespace DocumentTranslationService.Core
                     case "SubscriptionKey":
                         settings.SubscriptionKey = kvSecret.Value.Value;
                         break;
+                    case "TextTransEndpoint":
+                        settings.TextTransEndpoint = kvSecret.Value.Value;
+                        break;
                     default:
                         break;
                 }
