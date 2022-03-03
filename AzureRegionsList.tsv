@@ -8,6 +8,7 @@ West US 3	westus3
 Australia East	australiaeast
 Southeast Asia	southeastasia
 North Europe	northeurope
+Sweden Central	swedencentral
 UK South	uksouth
 West Europe	westeurope
 Central US	centralus
@@ -39,11 +40,19 @@ Australia	australia
 Brazil	brazil
 Canada	canada
 Europe	europe
+France	france
+Germany	germany
 Global	global
 India	india
 Japan	japan
+Korea	korea
+Norway	norway
+South Africa	southafrica
+Switzerland	switzerland
+United Arab Emirates	uae
 United Kingdom	uk
 United States	unitedstates
+United States EUAP	unitedstateseuap
 East Asia (Stage)	eastasiastage
 Southeast Asia (Stage)	southeastasiastage
 Central US EUAP	centraluseuap
@@ -54,6 +63,7 @@ Australia Central	australiacentral
 Australia Central 2	australiacentral2
 Australia Southeast	australiasoutheast
 Japan West	japanwest
+Jio India Central	jioindiacentral
 Korea South	koreasouth
 South India	southindia
 West India	westindia
