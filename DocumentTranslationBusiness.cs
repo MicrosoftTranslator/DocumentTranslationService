@@ -1,4 +1,4 @@
-﻿using Azure.AI.Translation.Document;
+using Azure.AI.Translation.Document;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Sas;
@@ -190,33 +190,42 @@ namespace DocumentTranslationService.Core
                 foreach (var filename in sourcefiles)
                 {
                     await semaphore.WaitAsync();
-                    FileStream fileStream;
+                    
+                    FileStream fileStream = null;
                     try
                     {
-                        fileStream = File.OpenRead(filename);
+                        try
+                        {
+                            fileStream = File.OpenRead(filename);
+                        }
+                        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+                        {
+                            logger.WriteLine(ex.Message);
+                            OnFileReadWriteError?.Invoke(this, ex.Message);
+                            if (!Nodelete) await DeleteContainersAsync(tolanguages);
+                            return;
+                        }
+                        BlobClient blobClient = new(TranslationService.StorageConnectionString, TranslationService.ContainerClientSource.Name, Normalize(filename));
+                        try
+                        {
+                            uploadTasks.Add(blobClient.UploadAsync(fileStream, true));
+                            count++;
+                            sizeInBytes += new FileInfo(fileStream.Name).Length;
+                            semaphore.Release();
+                        }
+                        catch (Exception ex) when (ex is AggregateException or Azure.RequestFailedException)
+                        {
+                            logger.WriteLine($"Uploading file {fileStream.Name} failed with {ex.Message}");
+                            OnFileReadWriteError?.Invoke(this, ex.Message);
+                            if (!Nodelete) await DeleteContainersAsync(tolanguages);
+                            return;
+                        }
                     }
-                    catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+                    finally
                     {
-                        logger.WriteLine(ex.Message);
-                        OnFileReadWriteError?.Invoke(this, ex.Message);
-                        if (!Nodelete) await DeleteContainersAsync(tolanguages);
-                        return;
+                        fileStream?.Dispose();
                     }
-                    BlobClient blobClient = new(TranslationService.StorageConnectionString, TranslationService.ContainerClientSource.Name, Normalize(filename));
-                    try
-                    {
-                        uploadTasks.Add(blobClient.UploadAsync(fileStream, true));
-                        count++;
-                        sizeInBytes += new FileInfo(fileStream.Name).Length;
-                        semaphore.Release();
-                    }
-                    catch (Exception ex) when (ex is AggregateException or Azure.RequestFailedException)
-                    {
-                        logger.WriteLine($"Uploading file {fileStream.Name} failed with {ex.Message}");
-                        OnFileReadWriteError?.Invoke(this, ex.Message);
-                        if (!Nodelete) await DeleteContainersAsync(tolanguages);
-                        return;
-                    }
+                    
                     logger.WriteLine($"File {filename} upload started.");
                 }
             }
