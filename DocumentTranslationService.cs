@@ -34,9 +34,14 @@ namespace DocumentTranslationService.Core
         public string AzureRegion { get; set; }
 
         /// <summary>
-        /// The name of the Azure Translator resource
+        /// The Uri of the Azure Document Translation endpoint
         /// </summary>
         public string AzureResourceName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The URI of the Azure Text Translation endpoint
+        /// </summary>
+        public string TextTransUri { get; set; } = string.Empty;
 
         internal BlobContainerClient ContainerClientSource { get; set; }
         internal Dictionary<string, BlobContainerClient> ContainerClientTargets { get; set; } = new();
@@ -86,9 +91,13 @@ namespace DocumentTranslationService.Core
         /// <returns></returns>
         public async Task InitializeAsync()
         {
-            if (String.IsNullOrEmpty(AzureResourceName)) throw new CredentialsException("name");
-            if (String.IsNullOrEmpty(SubscriptionKey)) throw new CredentialsException("key");
-            documentTranslationClient = new(new Uri("https://" + AzureResourceName + baseUriTemplate), new Azure.AzureKeyCredential(SubscriptionKey));
+            if (string.IsNullOrEmpty(AzureResourceName)) throw new CredentialsException("name");
+            if (string.IsNullOrEmpty(SubscriptionKey)) throw new CredentialsException("key");
+            if (string.IsNullOrEmpty(TextTransUri)) TextTransUri = "https://api.cognitive.microsofttranslator.com/";
+            string DocTransEndpoint;
+            if (!AzureResourceName.Contains('.')) DocTransEndpoint = "https://" + AzureResourceName + baseUriTemplate;
+            else DocTransEndpoint = AzureResourceName;
+            documentTranslationClient = new(new Uri(DocTransEndpoint), new Azure.AzureKeyCredential(SubscriptionKey));
             List<Task> tasks = new();
             tasks.Add(GetDocumentFormatsAsync());
             tasks.Add(GetGlossaryFormatsAsync());

@@ -24,7 +24,7 @@ namespace DocumentTranslationService.Core
         {
             List<Task> credTestTasks = new();
             //Test the subscription key
-            credTestTasks.Add(TryCredentialsKey(SubscriptionKey, AzureRegion));
+            credTestTasks.Add(TryCredentialsKey(SubscriptionKey, AzureRegion, TextTransUri));
             //Test the name of the resource
             credTestTasks.Add(TryCredentialsName());
             //Test the storage account
@@ -51,26 +51,30 @@ namespace DocumentTranslationService.Core
 
         private async Task TryCredentialsName()
         {
+            string DocTransEndpoint;
+            if (!AzureResourceName.Contains('.')) DocTransEndpoint = "https://" + AzureResourceName + baseUriTemplate;
+            else DocTransEndpoint = AzureResourceName;
             try
             {
-                HttpRequestMessage request = new() { Method = HttpMethod.Get, RequestUri = new Uri("https://" + this.AzureResourceName + baseUriTemplate + "/documents/formats") };
+                HttpRequestMessage request = new() { Method = HttpMethod.Get, RequestUri = new Uri(DocTransEndpoint + "/documents/formats") };
                 HttpClient client = new();
                 HttpResponseMessage response;
                 response = await client.SendAsync(request);
             }
             catch (HttpRequestException ex)
             {
-                throw new CredentialsException("Resource Name: " + ex.Message, ex);
+                throw new CredentialsException("Document Translation Endpoint: " + ex.Message, ex);
             }
             catch (System.UriFormatException ex)
             {
-                throw new CredentialsException("Resource Name: " + ex.Message, ex);
+                throw new CredentialsException("Document Translation Endpoint: " + ex.Message, ex);
             }
         }
 
-        private static async Task TryCredentialsKey(string subscriptionKey, string azureRegion)
+        private static async Task TryCredentialsKey(string subscriptionKey, string azureRegion, string TextTransUri)
         {
-            HttpRequestMessage request = new() { Method = HttpMethod.Post, RequestUri = new Uri("https://api.cognitive.microsofttranslator.com/detect?api-version=3.0") };
+            if (string.IsNullOrEmpty(TextTransUri)) TextTransUri = "https://api.cognitive.microsofttranslator.com";
+            using HttpRequestMessage request = new() { Method = HttpMethod.Post, RequestUri = new Uri(TextTransUri + "/detect?api-version=3.0") };
             request.Headers.Add("Ocp-Apim-Subscription-Key", subscriptionKey);
             if (azureRegion?.ToLowerInvariant() != "global") request.Headers.Add("Ocp-Apim-Subscription-Region", azureRegion);
             request.Content = new StringContent("[{ \"Text\": \"English\" }]", Encoding.UTF8, "application/json");
@@ -82,7 +86,10 @@ namespace DocumentTranslationService.Core
 
         private async Task TryPaidSubscription()
         {
-            Azure.AI.Translation.Document.DocumentTranslationClient documentTranslationClient = new(new Uri("https://" + AzureResourceName + baseUriTemplate), new Azure.AzureKeyCredential(SubscriptionKey));
+            string DocTransEndpoint;
+            if (!AzureResourceName.Contains('.')) DocTransEndpoint = "https://" + AzureResourceName + baseUriTemplate;
+            else DocTransEndpoint = AzureResourceName;
+            Azure.AI.Translation.Document.DocumentTranslationClient documentTranslationClient = new(new Uri(DocTransEndpoint), new Azure.AzureKeyCredential(SubscriptionKey));
 
             try
             {
@@ -90,7 +97,7 @@ namespace DocumentTranslationService.Core
             }
             catch (Azure.RequestFailedException ex)
             {
-                throw new CredentialsException(ex.Message);
+                throw new CredentialsException("Subscription Type: " + ex.Message);
             }
         }
     }
