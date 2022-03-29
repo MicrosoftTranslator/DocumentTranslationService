@@ -27,7 +27,7 @@ namespace DocumentTranslationService.Core
             string VaultUri;
             if (KeyVaultName.Contains('.')) VaultUri = KeyVaultName;
             else VaultUri = "https://" + KeyVaultName + ".vault.azure.net/";
-            SecretClient client = new(new Uri(VaultUri), new DefaultAzureCredential());
+            SecretClient client = new(new Uri(VaultUri), new InteractiveBrowserCredential());
             List<string> secretNames = new() { "AzureRegion", "AzureResourceName", "StorageConnectionString", "SubscriptionKey" };
             List<Task<Azure.Response<KeyVaultSecret>>> tasks = new();
             Azure.Response<KeyVaultSecret>[] kvSecrets;
