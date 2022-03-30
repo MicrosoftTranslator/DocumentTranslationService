@@ -28,7 +28,7 @@ namespace DocumentTranslationService.Core
             if (KeyVaultName.Contains('.')) VaultUri = KeyVaultName;
             else VaultUri = "https://" + KeyVaultName + ".vault.azure.net/";
             SecretClient client = new(new Uri(VaultUri), new InteractiveBrowserCredential());
-            List<string> secretNames = new() { "AzureRegion", "AzureResourceName", "StorageConnectionString", "SubscriptionKey" };
+            List<string> secretNames = new() { "AzureRegion", "AzureResourceName", "StorageConnectionString", "SubscriptionKey", "TextTransEndpoint" };
             List<Task<Azure.Response<KeyVaultSecret>>> tasks = new();
             Azure.Response<KeyVaultSecret>[] kvSecrets;
             foreach (string secret in secretNames) tasks.Add(client.GetSecretAsync(secret));
@@ -46,7 +46,11 @@ namespace DocumentTranslationService.Core
                 Debug.WriteLine($"Azure Key Vault: {ex.Message}");
                 throw new KeyVaultAccessException("msg_KeyVaultRequestFailed", ex);
             }
-            // catch more different exceptions here
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Azure Key Vault: {ex.Message}");
+                throw new KeyVaultAccessException("msg_KeyVaultRequestFailed", ex);
+            }
             DocTransAppSettings settings = new();
             foreach (var kvSecret in kvSecrets)
             {
