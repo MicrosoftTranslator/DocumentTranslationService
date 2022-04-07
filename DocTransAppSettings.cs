@@ -15,7 +15,7 @@ namespace DocumentTranslationService.Core
         /// </summary>
         public Connectionstrings ConnectionStrings { get; set; }
         /// <summary>
-        /// The subscription key to use.
+        /// The resource key to use.
         /// </summary>
         public string SubscriptionKey { get; set; }
         /// <summary>

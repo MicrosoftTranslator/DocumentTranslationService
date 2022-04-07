@@ -23,7 +23,7 @@ namespace DocumentTranslationService.Core
         public async Task TryCredentials()
         {
             List<Task> credTestTasks = new();
-            //Test the subscription key
+            //Test the resource key
             credTestTasks.Add(TryCredentialsKey(SubscriptionKey, AzureRegion, TextTransUri));
             //Test the name of the resource
             credTestTasks.Add(TryCredentialsName());

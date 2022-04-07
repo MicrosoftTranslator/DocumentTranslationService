@@ -23,7 +23,7 @@ namespace DocumentTranslationService.Core
         public string Category { get; set; }
 
         /// <summary>
-        /// Your Azure Translator subscription key. Get from properties of the Translator resource
+        /// Your Azure Translator resource key. Get from properties of the Translator resource
         /// </summary>
         public string SubscriptionKey { get; set; } = string.Empty;
 
