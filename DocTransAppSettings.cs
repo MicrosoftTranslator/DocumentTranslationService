@@ -39,6 +39,10 @@ namespace DocumentTranslationService.Core
         /// Holds the Text Translation Endpoint
         /// </summary>
         public string TextTransEndpoint { get; set; }
+        /// <summary>
+        /// Holds the string for experimental flights
+        /// </summary>
+        public string FlightString { get; set; }
         public bool UsingKeyVault
         {
             get

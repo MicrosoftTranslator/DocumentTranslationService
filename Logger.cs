@@ -36,13 +36,14 @@ namespace DocumentTranslationService.Core
         internal void Close()
         {
             string finalfilename = GetFinalFilename();
-            try
-            {
-                streamWriter.Close();
-                File.Copy(filename, finalfilename, true);
-                File.Delete(filename);
-            }
-            catch { };
+            if (File.Exists(filename))
+                try
+                {
+                    streamWriter.Close();
+                    File.Copy(filename, finalfilename, true);
+                    File.Delete(filename);
+                }
+                catch { };
         }
 
         private static string GetFinalFilename()

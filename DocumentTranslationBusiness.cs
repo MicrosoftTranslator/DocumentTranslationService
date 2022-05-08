@@ -21,6 +21,10 @@ namespace DocumentTranslationService.Core
         /// </summary>
         public string TargetFolder { get; private set; }
         /// <summary>
+        /// Set the flight to follow
+        /// </summary>
+        public string Flight { get; set; }
+        /// <summary>
         /// Returns the files used as glossary.
         /// </summary>
         public Glossary Glossary { get; private set; }
@@ -29,7 +33,7 @@ namespace DocumentTranslationService.Core
         /// Prevent deletion of storage container. For debugging.
         /// </summary>
         public bool Nodelete { get; set; } = false;
-        
+
         /// <summary>
         /// Fires when errors were encountered in the translation run
         /// The message is a tab-separated list of files names and the error message and code returned from server
@@ -155,7 +159,7 @@ namespace DocumentTranslationService.Core
             {
                 sourceContainer = new(TranslationService.StorageConnectionString, containerNameBase + "src");
             }
-            catch(System.FormatException ex)
+            catch (System.FormatException ex)
             {
                 logger.WriteLine(ex.Message + ex.InnerException?.Message);
                 OnContainerCreationFailure?.Invoke(this, ex.Message);
@@ -237,7 +241,7 @@ namespace DocumentTranslationService.Core
             {
                 var result = await glossary.UploadAsync(TranslationService.StorageConnectionString, containerNameBase);
             }
-            catch(System.IO.IOException ex)
+            catch (System.IO.IOException ex)
             {
                 logger.WriteLine($"Glossaries upload failed with {ex.Message}");
                 OnFileReadWriteError?.Invoke(this, ex.Message);
@@ -328,7 +332,7 @@ namespace DocumentTranslationService.Core
             }
             while (
                   (status.DocumentsInProgress != 0)
-                ||(!status.HasCompleted));
+                || (!status.HasCompleted));
             OnStatusUpdate?.Invoke(this, new StatusResponse(status));
             Task<List<DocumentStatusResult>> finalResultsTask = TranslationService.GetFinalResultsAsync();
             if (status.Status == DocumentTranslationStatus.ValidationFailed) return;
@@ -344,7 +348,7 @@ namespace DocumentTranslationService.Core
                 string directoryName;
                 if (string.IsNullOrEmpty(targetFolder)) directoryName = Path.GetDirectoryName(sourcefiles[0]) + "." + lang;
                 else
-                    if (targetFolder.Contains("*")) directoryName = targetFolder.Replace("*", lang);
+                    if (targetFolder.Contains('*')) directoryName = targetFolder.Replace("*", lang);
                 else
                         if (tolanguages.Length == 1) directoryName = targetFolder;
                 else directoryName = targetFolder + "." + lang;

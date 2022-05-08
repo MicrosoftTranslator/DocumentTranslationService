@@ -43,6 +43,11 @@ namespace DocumentTranslationService.Core
         /// </summary>
         public string TextTransUri { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Sets the string to be used as a flight
+        /// </summary>
+        public string FlightString { get; set; } = string.Empty;
+
         internal BlobContainerClient ContainerClientSource { get; set; }
         internal Dictionary<string, BlobContainerClient> ContainerClientTargets { get; set; } = new();
         public DocumentTranslationOperation DocumentTranslationOperation { get => documentTranslationOperation; set => documentTranslationOperation = value; }
@@ -97,7 +102,9 @@ namespace DocumentTranslationService.Core
             string DocTransEndpoint;
             if (!AzureResourceName.Contains('.')) DocTransEndpoint = "https://" + AzureResourceName + baseUriTemplate;
             else DocTransEndpoint = AzureResourceName;
-            documentTranslationClient = new(new Uri(DocTransEndpoint), new Azure.AzureKeyCredential(SubscriptionKey));
+            var options = new DocumentTranslationClientOptions();
+            if (!string.IsNullOrEmpty(FlightString)) options.AddPolicy(new FlightPolicy(FlightString.Trim()), Azure.Core.HttpPipelinePosition.PerCall);
+            documentTranslationClient = new(new Uri(DocTransEndpoint), new Azure.AzureKeyCredential(SubscriptionKey), options);
             List<Task> tasks = new();
             tasks.Add(GetDocumentFormatsAsync());
             tasks.Add(GetGlossaryFormatsAsync());
