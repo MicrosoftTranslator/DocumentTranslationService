@@ -475,8 +475,8 @@ namespace DocumentTranslationService.Core
                 {
                     BlobContainerClient client = new(TranslationService.StorageConnectionString, containerItem.Name);
                     if (containerItem.Name.EndsWith("src")
-                        || (containerItem.Name.EndsWith("tgt"))
-                        || (containerItem.Name.EndsWith("gls")))
+                        || (containerItem.Name.Contains("tgt"))
+                        || (containerItem.Name.Contains("gls")))
                     {
                         if (containerItem.Properties.LastModified < (DateTimeOffset.UtcNow - TimeSpan.FromDays(7)))
                         {
