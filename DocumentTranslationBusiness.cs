@@ -498,9 +498,11 @@ namespace DocumentTranslationService.Core
         private async Task DeleteContainersAsync(string[] tolanguages)
         {
             logger.WriteLine("START - Container deletion.");
-            List<Task> deletionTasks = new();
-            //delete the containers of this run
-            deletionTasks.Add(TranslationService.ContainerClientSource.DeleteAsync());
+            List<Task> deletionTasks = new()
+            {
+                //delete the containers of this run
+                TranslationService.ContainerClientSource.DeleteAsync()
+            };
             foreach (string lang in tolanguages)
                 deletionTasks.Add(TranslationService.ContainerClientTargets[lang].DeleteAsync());
             deletionTasks.Add(Glossary.DeleteAsync());
