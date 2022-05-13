@@ -105,9 +105,11 @@ namespace DocumentTranslationService.Core
             var options = new DocumentTranslationClientOptions();
             if (!string.IsNullOrEmpty(FlightString)) options.AddPolicy(new FlightPolicy(FlightString.Trim()), Azure.Core.HttpPipelinePosition.PerCall);
             documentTranslationClient = new(new Uri(DocTransEndpoint), new Azure.AzureKeyCredential(SubscriptionKey), options);
-            List<Task> tasks = new();
-            tasks.Add(GetDocumentFormatsAsync());
-            tasks.Add(GetGlossaryFormatsAsync());
+            List<Task> tasks = new()
+            {
+                GetDocumentFormatsAsync(),
+                GetGlossaryFormatsAsync()
+            };
             try
             {
                 await Task.WhenAll(tasks);
@@ -117,7 +119,7 @@ namespace DocumentTranslationService.Core
             {
                 throw new CredentialsException(ex.Message, ex);
             }
-            if (OnInitializeComplete is not null) OnInitializeComplete(this, EventArgs.Empty);
+            OnInitializeComplete?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>

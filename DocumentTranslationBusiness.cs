@@ -346,12 +346,12 @@ namespace DocumentTranslationService.Core
             foreach (string lang in tolanguages)
             {
                 string directoryName;
-                if (string.IsNullOrEmpty(targetFolder)) directoryName = Path.GetDirectoryName(sourcefiles[0]) + "." + lang;
+                if (string.IsNullOrEmpty(targetFolder)) directoryName = Path.GetDirectoryName(sourcefiles[0]) + Path.DirectorySeparatorChar + lang;
                 else
                     if (targetFolder.Contains('*')) directoryName = targetFolder.Replace("*", lang);
                 else
                         if (tolanguages.Length == 1) directoryName = targetFolder;
-                else directoryName = targetFolder + "." + lang;
+                else directoryName = targetFolder + Path.DirectorySeparatorChar + lang;
                 DirectoryInfo directory = new(directoryName);
                 try
                 {
