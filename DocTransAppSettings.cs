@@ -47,7 +47,7 @@ namespace DocumentTranslationService.Core
         {
             get
             {
-                if (string.IsNullOrEmpty(AzureKeyVaultName.Trim())) return false;
+                if (string.IsNullOrEmpty(AzureKeyVaultName?.Trim())) return false;
                 else return true;
             }
         }
