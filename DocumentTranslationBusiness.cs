@@ -269,7 +269,7 @@ namespace DocumentTranslationService.Core
             Dictionary<string, Uri> sasUriTargets = new();
             foreach (string lang in tolanguages)
             {
-                sasUriTargets.Add(lang, targetContainers[lang].GenerateSasUri(BlobContainerSasPermissions.All, DateTimeOffset.UtcNow + TimeSpan.FromHours(5)));
+                sasUriTargets.Add(lang, targetContainers[lang].GenerateSasUri(BlobContainerSasPermissions.Write | BlobContainerSasPermissions.List, DateTimeOffset.UtcNow + TimeSpan.FromHours(5)));
             }
             TranslationSource translationSource = new(sasUriSource);
             if (!(string.IsNullOrEmpty(fromlanguage)))
