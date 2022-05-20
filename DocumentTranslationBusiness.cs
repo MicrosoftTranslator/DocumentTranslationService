@@ -321,7 +321,17 @@ namespace DocumentTranslationService.Core
             do
             {
                 await Task.Delay(1000);
-                status = await TranslationService.CheckStatusAsync();
+                status = null;
+                try
+                {
+                    status = await TranslationService.CheckStatusAsync();
+                }
+                catch (Azure.RequestFailedException ex)
+                {
+                    logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} Status: {ex.ErrorCode} {ex.Message}");
+                    OnThereWereErrors(this, ex.ErrorCode + "  " + ex.Message);
+                    return;
+                }
                 logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} Http status: {TranslationService.AzureHttpStatus.Status} {TranslationService.AzureHttpStatus.ReasonPhrase}");
                 OnHeartBeat?.Invoke(this, TranslationService.AzureHttpStatus.Status);
                 if (status is null)
