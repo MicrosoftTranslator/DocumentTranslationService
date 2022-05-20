@@ -50,6 +50,12 @@ namespace DocumentTranslationService.Core
 
         internal BlobContainerClient ContainerClientSource { get; set; }
         internal Dictionary<string, BlobContainerClient> ContainerClientTargets { get; set; } = new();
+
+        /// <summary>
+        /// Holds the Azure Http Status to check during the run of the translation 
+        /// </summary>
+        internal Azure.Response AzureHttpStatus;
+
         public DocumentTranslationOperation DocumentTranslationOperation { get => documentTranslationOperation; set => documentTranslationOperation = value; }
 
         private DocumentTranslationClient documentTranslationClient;
@@ -128,8 +134,17 @@ namespace DocumentTranslationService.Core
         /// <returns></returns>
         public async Task<DocumentTranslationOperation> CheckStatusAsync()
         {
-            _ = await documentTranslationOperation.UpdateStatusAsync(cancellationToken);
-            return documentTranslationOperation;
+            for (int i = 0; i < 3; i++)
+            {
+                AzureHttpStatus = await documentTranslationOperation.UpdateStatusAsync(cancellationToken);
+                if (AzureHttpStatus.IsError)
+                {
+                    await Task.Delay(300);
+                    continue;
+                }
+                return documentTranslationOperation;
+            }
+            return null;
         }
 
         /// <summary>

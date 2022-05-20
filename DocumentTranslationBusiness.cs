@@ -85,8 +85,9 @@ namespace DocumentTranslationService.Core
 
         /// <summary>
         /// Fires each time there is a status pull with a response from the service. 
+        /// The argument is the http status of the status request
         /// </summary>
-        public event EventHandler OnHeartBeat;
+        public event EventHandler<int> OnHeartBeat;
 
         private readonly Logger logger = new();
 
@@ -321,7 +322,14 @@ namespace DocumentTranslationService.Core
             {
                 await Task.Delay(1000);
                 status = await TranslationService.CheckStatusAsync();
-                OnHeartBeat?.Invoke(this, EventArgs.Empty);
+                logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} Http status: {TranslationService.AzureHttpStatus.Status} {TranslationService.AzureHttpStatus.ReasonPhrase}");
+                OnHeartBeat?.Invoke(this, TranslationService.AzureHttpStatus.Status);
+                if (status is null)
+                {
+                    logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} Failed to receive status: Translation run terminated with: {TranslationService.AzureHttpStatus.Status} {TranslationService.AzureHttpStatus.ReasonPhrase}");
+                    OnThereWereErrors?.Invoke(this, $"Failed to receive status: Translation run terminated with: {TranslationService.AzureHttpStatus.Status} {TranslationService.AzureHttpStatus.ReasonPhrase}");
+                    return;
+                }
                 logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} Service status: {status.CreatedOn} {status.Status}");
                 if (status.LastModified != lastActionTime)
                 {
