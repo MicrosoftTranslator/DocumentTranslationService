@@ -469,7 +469,7 @@ namespace DocumentTranslationService.Core
             catch (IOException)
             {
                 //This happens when target folder is same as source. Try again with a different file name in same folder.
-                downloadFileStream = File.Create(directory.FullName + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(blobItem.Name) + "." + tolanguage + "." + Path.GetExtension(blobItem.Name));
+                downloadFileStream = File.Create(directory.FullName + Path.DirectorySeparatorChar + Path.GetFileNameWithoutExtension(blobItem.Name) + "." + tolanguage + Path.GetExtension(blobItem.Name));
             }
             await blobDownloadInfo.Content.CopyToAsync(downloadFileStream);
             downloadFileStream.Close();
