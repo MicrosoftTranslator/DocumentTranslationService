@@ -254,7 +254,7 @@ namespace DocumentTranslationService.Core
             #endregion
 
             #region Translate the container content
-            Uri sasUriSource = sourceContainer.GenerateSasUri(BlobContainerSasPermissions.All, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
+            Uri sasUriSource = sourceContainer.GenerateSasUri(BlobContainerSasPermissions.Read | BlobContainerSasPermissions.List, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
             try
             {
                 await Task.WhenAll(targetContainerTasks);
