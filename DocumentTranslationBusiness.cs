@@ -91,6 +91,8 @@ namespace DocumentTranslationService.Core
 
         private readonly Logger logger = new();
 
+        private bool UseManagedIdentity = true;
+
         #endregion Properties
 
         /// <summary>
@@ -254,7 +256,17 @@ namespace DocumentTranslationService.Core
             #endregion
 
             #region Translate the container content
-            Uri sasUriSource = sourceContainer.GenerateSasUri(BlobContainerSasPermissions.Read | BlobContainerSasPermissions.List, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
+            Uri sasUriSource;
+            if (UseManagedIdentity)
+            {
+                sasUriSource = sourceContainer.Uri;
+                logger.WriteLine($"Using Managed Identity.\r\nSourceURI: {sasUriSource}");
+            }
+            else
+            { 
+                sasUriSource = sourceContainer.GenerateSasUri(BlobContainerSasPermissions.Read | BlobContainerSasPermissions.List, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
+                logger.WriteLine($"Using SAS token.\r\nSourceURI: {sasUriSource}");
+            }
             try
             {
                 await Task.WhenAll(targetContainerTasks);
@@ -269,7 +281,11 @@ namespace DocumentTranslationService.Core
             Dictionary<string, Uri> sasUriTargets = new();
             foreach (string lang in tolanguages)
             {
-                sasUriTargets.Add(lang, targetContainers[lang].GenerateSasUri(BlobContainerSasPermissions.Write | BlobContainerSasPermissions.List, DateTimeOffset.UtcNow + TimeSpan.FromHours(5)));
+                if (UseManagedIdentity)
+                    sasUriTargets.Add(lang, targetContainers[lang].Uri);
+                else
+                    sasUriTargets.Add(lang, targetContainers[lang].GenerateSasUri(BlobContainerSasPermissions.Write | BlobContainerSasPermissions.List, DateTimeOffset.UtcNow + TimeSpan.FromHours(5)));
+                logger.WriteLine($"TargetURI: {sasUriTargets[lang]}");
             }
             TranslationSource translationSource = new(sasUriSource);
             if (!(string.IsNullOrEmpty(fromlanguage)))
