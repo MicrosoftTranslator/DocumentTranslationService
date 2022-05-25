@@ -91,8 +91,6 @@ namespace DocumentTranslationService.Core
 
         private readonly Logger logger = new();
 
-        private bool UseManagedIdentity = true;
-
         #endregion Properties
 
         /// <summary>
@@ -180,7 +178,24 @@ namespace DocumentTranslationService.Core
                 TranslationService.ContainerClientTargets.Add(lang, targetContainer);
                 targetContainers.Add(lang, targetContainer);
             }
-            Glossary glossary = new(TranslationService, glossaryfiles);
+            Glossary glossary;
+            try
+            {
+                glossary = new(TranslationService, glossaryfiles, false);
+            }
+            catch(Azure.RequestFailedException ex)
+            {
+                if (ex.ErrorCode == "InvalidRequest")
+                {
+                    //Retry with Managed Identity URIs
+                    glossary = new(TranslationService, glossaryfiles, true);
+                }
+                else
+                {
+                    OnThereWereErrors?.Invoke(this, $"Failed uploading glossaries: {ex.ErrorCode}: {ex.Message}");
+                    return;
+                }
+            }
             this.Glossary = glossary;
             #endregion
 
@@ -256,17 +271,6 @@ namespace DocumentTranslationService.Core
             #endregion
 
             #region Translate the container content
-            Uri sasUriSource;
-            if (UseManagedIdentity)
-            {
-                sasUriSource = sourceContainer.Uri;
-                logger.WriteLine($"Using Managed Identity.\r\nSourceURI: {sasUriSource}");
-            }
-            else
-            { 
-                sasUriSource = sourceContainer.GenerateSasUri(BlobContainerSasPermissions.Read | BlobContainerSasPermissions.List, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
-                logger.WriteLine($"Using SAS token.\r\nSourceURI: {sasUriSource}");
-            }
             try
             {
                 await Task.WhenAll(targetContainerTasks);
@@ -278,41 +282,20 @@ namespace DocumentTranslationService.Core
                 if (!Nodelete) await DeleteContainersAsync(tolanguages);
                 return;
             }
-            Dictionary<string, Uri> sasUriTargets = new();
-            foreach (string lang in tolanguages)
-            {
-                if (UseManagedIdentity)
-                    sasUriTargets.Add(lang, targetContainers[lang].Uri);
-                else
-                    sasUriTargets.Add(lang, targetContainers[lang].GenerateSasUri(BlobContainerSasPermissions.Write | BlobContainerSasPermissions.List, DateTimeOffset.UtcNow + TimeSpan.FromHours(5)));
-                logger.WriteLine($"TargetURI: {sasUriTargets[lang]}");
-            }
-            TranslationSource translationSource = new(sasUriSource);
-            if (!(string.IsNullOrEmpty(fromlanguage)))
-            {
-                if (fromlanguage.ToLowerInvariant() == "auto") fromlanguage = null;
-                else translationSource.LanguageCode = fromlanguage;
-            }
-            List<TranslationTarget> translationTargets = new();
-            foreach (string lang in tolanguages)
-            {
-                TranslationTarget translationTarget = new(sasUriTargets[lang], lang);
-                if (glossary.Glossaries is not null)
-                {
-                    foreach (var glos in glossary.Glossaries) translationTarget.Glossaries.Add(glos.Value);
-                }
-                if (TranslationService.Category is not null)
-                {
-                    translationTarget.CategoryId = TranslationService.Category;
-                }
-                translationTargets.Add(translationTarget);
-            }
-            DocumentTranslationInput input = new(translationSource, translationTargets);
 
+            DocumentTranslationOperation status;
             try
             {
+                DocumentTranslationInput input = GenerateInput(fromlanguage, tolanguages, sourceContainer, targetContainers, glossary, false);
                 string statusID = await TranslationService.SubmitTranslationRequestAsync(input);
-                logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} START - Translation service request. StatusID: {statusID}");
+                logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} START - Translation service request with SAS token. StatusID: {statusID}");
+                for (int i = 0; i < 3; i++)
+                {
+                    status = await TranslationService.CheckStatusAsync();
+                    Debug.WriteLine($"Status {i}: {status?.Status}");
+                    if (status != null) break;
+                    await Task.Delay(200);
+                }
             }
             catch (Azure.RequestFailedException ex)
             {
@@ -328,11 +311,11 @@ namespace DocumentTranslationService.Core
             {
                 logger.WriteLine("ERROR: Start of translation job failed.");
                 if (!Nodelete) await DeleteContainersAsync(tolanguages);
+                OnThereWereErrors?.Invoke(this, "ERROR: Start of translation job failed with a NULL response from service.");
                 return;
             }
 
             //Check on status until status is in a final state
-            DocumentTranslationOperation status;
             DateTimeOffset lastActionTime = DateTimeOffset.MinValue;
             do
             {
@@ -344,8 +327,38 @@ namespace DocumentTranslationService.Core
                 }
                 catch (Azure.RequestFailedException ex)
                 {
-                    logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} Status: {ex.ErrorCode} {ex.Message}");
-                    OnThereWereErrors(this, ex.ErrorCode + "  " + ex.Message);
+                    if (ex.ErrorCode == "InvalidRequest")
+                    {
+                        //Retry with managed identity URIs:
+                        try
+                        {
+                            //Last parameter, here: true, forces managed identity
+                            DocumentTranslationInput input = GenerateInput(fromlanguage, tolanguages, sourceContainer, targetContainers, glossary, true);
+                            string statusID = await TranslationService.SubmitTranslationRequestAsync(input);
+                            logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} START - Translation service request with Managed Identity. StatusID: {statusID}");
+                            await Task.Delay(200);
+                            status = await TranslationService.CheckStatusAsync();
+                        }
+                        catch (Azure.RequestFailedException ex2)
+                        {
+                            OnStatusUpdate?.Invoke(this, new StatusResponse(TranslationService.DocumentTranslationOperation, ex2.ErrorCode + ": " + ex2.Message));
+                            logger.WriteLine("After trying with SAS token and managed identity URLs: " + ex2.ErrorCode + ": " + ex2.Message);
+                            OnThereWereErrors(this, ex2.ErrorCode + "  " + ex2.Message);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        OnStatusUpdate?.Invoke(this, new StatusResponse(TranslationService.DocumentTranslationOperation, ex.ErrorCode + ": " + ex.Message));
+                        logger.WriteLine(ex.ErrorCode + ": " + ex.Message);
+                        OnThereWereErrors(this, ex.ErrorCode + "  " + ex.Message);
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    OnThereWereErrors(this, ex.Message);
+                    logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} Status: {ex.Message}");
                     return;
                 }
                 logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} Http status: {TranslationService.AzureHttpStatus.Status} {TranslationService.AzureHttpStatus.ReasonPhrase}");
@@ -448,6 +461,60 @@ namespace DocumentTranslationService.Core
             logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} Run: Exiting.");
             logger.Close();
             #endregion
+        }
+
+        private DocumentTranslationInput GenerateInput(string fromlanguage, string[] tolanguages, BlobContainerClient sourceContainer, Dictionary<string, BlobContainerClient> targetContainers, Glossary glossary, bool UseManagedIdentity)
+        {
+            Uri sourceUri = GenerateSasUriSource(sourceContainer, UseManagedIdentity);
+            TranslationSource translationSource = new(sourceUri);
+            logger.WriteLine($"SourceURI: {sourceUri}");
+            if (!(string.IsNullOrEmpty(fromlanguage)))
+            {
+                if (fromlanguage.ToLowerInvariant() == "auto")
+                    translationSource.LanguageCode = null;
+                else
+                    translationSource.LanguageCode = fromlanguage;
+            }
+
+            Dictionary<string, Uri> sasUriTargets = GenerateSasUriTargets(tolanguages, targetContainers, UseManagedIdentity);
+            List<TranslationTarget> translationTargets = new();
+            foreach (string lang in tolanguages)
+            {
+                TranslationTarget translationTarget = new(sasUriTargets[lang], lang);
+                if (glossary.Glossaries is not null)
+                {
+                    foreach (var glos in glossary.Glossaries) translationTarget.Glossaries.Add(glos.Value);
+                }
+                if (TranslationService.Category is not null)
+                {
+                    translationTarget.CategoryId = TranslationService.Category;
+                }
+                translationTargets.Add(translationTarget);
+            }
+            return new(translationSource, translationTargets);
+        }
+
+        private Dictionary<string, Uri> GenerateSasUriTargets(string[] tolanguages, Dictionary<string, BlobContainerClient> targetContainers, bool UseManagedIdentity)
+        {
+            Dictionary<string, Uri> sasUriTargets = new();
+            foreach (string lang in tolanguages)
+            {
+                if (UseManagedIdentity)
+                    sasUriTargets.Add(lang, targetContainers[lang].Uri);
+                else
+                    sasUriTargets.Add(lang, targetContainers[lang].GenerateSasUri(BlobContainerSasPermissions.Write | BlobContainerSasPermissions.List, DateTimeOffset.UtcNow + TimeSpan.FromHours(5)));
+                logger.WriteLine($"TargetURI: {sasUriTargets[lang]}");
+            }
+
+            return sasUriTargets;
+        }
+
+        private static Uri GenerateSasUriSource(BlobContainerClient sourceContainer, bool UseManagedIdentity)
+        {
+            if (UseManagedIdentity)
+                return sourceContainer.Uri;
+            else
+                return sourceContainer.GenerateSasUri(BlobContainerSasPermissions.Read | BlobContainerSasPermissions.List, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
         }
 
         private static string ToDisplayForm(string localPath)

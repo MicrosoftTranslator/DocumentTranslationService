@@ -19,13 +19,10 @@ namespace DocumentTranslationService.Core
         /// </summary>
         public Dictionary<string, TranslationGlossary> Glossaries { get; private set; } = new();
 
-        public Uri ContainerClientSasUri { get => containerClientSasUri; }
-
         /// <summary>
         /// Holds the Container for the glossary files
         /// </summary>
         private BlobContainerClient containerClient;
-        private Uri containerClientSasUri;
         private readonly DocumentTranslationService translationService;
 
         /// <summary>
@@ -39,13 +36,16 @@ namespace DocumentTranslationService.Core
         /// </summary>
         public event EventHandler<(int, long)> OnUploadComplete;
 
+        private readonly bool useManagedIdentity;
+
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="translationService"></param>
         /// <param name="glossaryFiles"></param>
-        public Glossary(DocumentTranslationService translationService, List<string> glossaryFiles = null)
+        public Glossary(DocumentTranslationService translationService, List<string> glossaryFiles, bool UseManagedIdentity)
         {
+            useManagedIdentity = UseManagedIdentity;
             if ((glossaryFiles is null) || (glossaryFiles.Count == 0))
             {
                 Glossaries = null;
@@ -108,7 +108,6 @@ namespace DocumentTranslationService.Core
             BlobContainerClient glossaryContainer = new(storageConnectionString, containerNameBase + "gls");
             await glossaryContainer.CreateIfNotExistsAsync();
             this.containerClient = glossaryContainer;
-            this.containerClientSasUri = containerClient.GenerateSasUri(BlobContainerSasPermissions.All, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
 
             //Do the upload
             Debug.WriteLine("START - glossary upload.");
@@ -124,7 +123,7 @@ namespace DocumentTranslationService.Core
                     using FileStream fileStream = File.OpenRead(glossary.Key);
                     BlobClient blobClient = new(translationService.StorageConnectionString, glossaryContainer.Name, DocumentTranslationBusiness.Normalize(glossary.Key));
                     uploads.Add(blobClient.UploadAsync(fileStream, true));
-                    var sasUriGlossaryBlob = blobClient.GenerateSasUri(BlobSasPermissions.All, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
+                    Uri sasUriGlossaryBlob = useManagedIdentity ? blobClient.Uri : blobClient.GenerateSasUri(BlobSasPermissions.All, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
                     TranslationGlossary translationGlossary = new(sasUriGlossaryBlob, Path.GetExtension(glossary.Key)[1..].ToUpperInvariant());
                     Glossaries[glossary.Key] = translationGlossary;
                     fileCounter++;
