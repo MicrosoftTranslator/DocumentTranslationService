@@ -24,10 +24,6 @@ namespace DocumentTranslationService.Core
         /// Set the flight to follow
         /// </summary>
         public string Flight { get; set; }
-        /// <summary>
-        /// Returns the files used as glossary.
-        /// </summary>
-        public Glossary Glossary { get; private set; }
 
         /// <summary>
         /// Prevent deletion of storage container. For debugging.
@@ -90,6 +86,11 @@ namespace DocumentTranslationService.Core
         public event EventHandler<int> OnHeartBeat;
 
         private readonly Logger logger = new();
+
+        /// <summary>
+        /// Holds the files used as glossary.
+        /// </summary>
+        private Glossary glossary;
 
         #endregion Properties
 
@@ -178,25 +179,6 @@ namespace DocumentTranslationService.Core
                 TranslationService.ContainerClientTargets.Add(lang, targetContainer);
                 targetContainers.Add(lang, targetContainer);
             }
-            Glossary glossary;
-            try
-            {
-                glossary = new(TranslationService, glossaryfiles, false);
-            }
-            catch(Azure.RequestFailedException ex)
-            {
-                if (ex.ErrorCode == "InvalidRequest")
-                {
-                    //Retry with Managed Identity URIs
-                    glossary = new(TranslationService, glossaryfiles, true);
-                }
-                else
-                {
-                    OnThereWereErrors?.Invoke(this, $"Failed uploading glossaries: {ex.ErrorCode}: {ex.Message}");
-                    return;
-                }
-            }
-            this.Glossary = glossary;
             #endregion
 
             #region Upload documents
@@ -255,6 +237,7 @@ namespace DocumentTranslationService.Core
                 return;
             }
             //Upload Glossaries
+            glossary = new(TranslationService, glossaryfiles);
             try
             {
                 var result = await glossary.UploadAsync(TranslationService.StorageConnectionString, containerNameBase);
@@ -483,7 +466,10 @@ namespace DocumentTranslationService.Core
                 TranslationTarget translationTarget = new(sasUriTargets[lang], lang);
                 if (glossary.Glossaries is not null)
                 {
-                    foreach (var glos in glossary.Glossaries) translationTarget.Glossaries.Add(glos.Value);
+                    if (UseManagedIdentity)
+                        foreach (var glos in glossary.PlainUriGlossaries) translationTarget.Glossaries.Add(glos.Value);
+                    else
+                        foreach (var glos in glossary.Glossaries) translationTarget.Glossaries.Add(glos.Value);
                 }
                 if (TranslationService.Category is not null)
                 {
@@ -606,7 +592,7 @@ namespace DocumentTranslationService.Core
             };
             foreach (string lang in tolanguages)
                 deletionTasks.Add(TranslationService.ContainerClientTargets[lang].DeleteAsync());
-            deletionTasks.Add(Glossary.DeleteAsync());
+            deletionTasks.Add(glossary.DeleteAsync());
             if (DateTime.Now.Millisecond < 100) deletionTasks.Add(ClearOldContainersAsync());  //Clear out old stuff ~ every 10th time. 
             await Task.WhenAll(deletionTasks);
             logger.WriteLine("END - Containers deleted.");
