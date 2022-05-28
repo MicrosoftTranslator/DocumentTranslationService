@@ -20,11 +20,7 @@ namespace DocumentTranslationService.Core
         /// Can retrieve the final target folder here
         /// </summary>
         public string TargetFolder { get; private set; }
-        /// <summary>
-        /// Set the flight to follow
-        /// </summary>
-        public string Flight { get; set; }
-
+ 
         /// <summary>
         /// Prevent deletion of storage container. For debugging.
         /// </summary>
@@ -272,13 +268,6 @@ namespace DocumentTranslationService.Core
                 DocumentTranslationInput input = GenerateInput(fromlanguage, tolanguages, sourceContainer, targetContainers, glossary, false);
                 string statusID = await TranslationService.SubmitTranslationRequestAsync(input);
                 logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} START - Translation service request with SAS token. StatusID: {statusID}");
-                for (int i = 0; i < 3; i++)
-                {
-                    status = await TranslationService.CheckStatusAsync();
-                    Debug.WriteLine($"Status {i}: {status?.Status}");
-                    if (status != null) break;
-                    await Task.Delay(200);
-                }
             }
             catch (Azure.RequestFailedException ex)
             {
