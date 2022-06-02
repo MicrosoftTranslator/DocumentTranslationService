@@ -124,9 +124,9 @@ namespace DocumentTranslationService.Core
                 await semaphore.WaitAsync();
                 try
                 {
-                    using FileStream fileStream = File.OpenRead(glossary.Key);
-                    BlobClient blobClient = new(translationService.StorageConnectionString, glossaryContainer.Name, DocumentTranslationBusiness.Normalize(glossary.Key));
-                    uploads.Add(blobClient.UploadAsync(fileStream, true));
+                    var filename = glossary.Key;
+                    BlobClient blobClient = new(translationService.StorageConnectionString, glossaryContainer.Name, DocumentTranslationBusiness.Normalize(filename));
+                    uploads.Add(blobClient.UploadAsync(filename, true));
                     Uri sasUriGlossaryBlob = blobClient.GenerateSasUri(BlobSasPermissions.All, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
                     Debug.WriteLine($"Glossary URI: {sasUriGlossaryBlob.AbsoluteUri}");
                     TranslationGlossary translationGlossary = new(sasUriGlossaryBlob, Path.GetExtension(glossary.Key)[1..].ToUpperInvariant());
@@ -134,9 +134,9 @@ namespace DocumentTranslationService.Core
                     TranslationGlossary plainUriTranslationGlossary = new(blobClient.Uri, Path.GetExtension(glossary.Key)[1..].ToUpperInvariant());
                     PlainUriGlossaries[glossary.Key] = plainUriTranslationGlossary;
                     fileCounter++;
-                    uploadSize += new FileInfo(fileStream.Name).Length;
+                    uploadSize += new FileInfo(filename).Length;
                     semaphore.Release();
-                    Debug.WriteLine(String.Format($"Glossary file {fileStream.Name} uploaded."));
+                    Debug.WriteLine(String.Format($"Glossary file {filename} uploaded."));
                 }
                 catch (System.IO.IOException ex)
                 {
