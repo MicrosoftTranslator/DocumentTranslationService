@@ -124,7 +124,7 @@ namespace DocumentTranslationService.Core
                 await semaphore.WaitAsync();
                 try
                 {
-                    var filename = glossary.Key;
+                    string filename = glossary.Key;
                     BlobClient blobClient = new(translationService.StorageConnectionString, glossaryContainer.Name, DocumentTranslationBusiness.Normalize(filename));
                     uploads.Add(blobClient.UploadAsync(filename, true));
                     Uri sasUriGlossaryBlob = blobClient.GenerateSasUri(BlobSasPermissions.All, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
