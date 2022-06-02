@@ -15,17 +15,20 @@ namespace DocumentTranslationService.Core
     public class Glossary
     {
         /// <summary>
-        /// Distionary of Glossary Filename and various glossary information
+        /// Dictionary of Glossary Filename and various glossary information
+        /// The string is the file name.
         /// </summary>
         public Dictionary<string, TranslationGlossary> Glossaries { get; private set; } = new();
-
-        public Uri ContainerClientSasUri { get => containerClientSasUri; }
+        /// <summary>
+        /// Dictionary of plain Uri glossaries
+        /// For use with Managed Identity
+        /// </summary>
+        public Dictionary<string, TranslationGlossary> PlainUriGlossaries { get; private set; }
 
         /// <summary>
         /// Holds the Container for the glossary files
         /// </summary>
         private BlobContainerClient containerClient;
-        private Uri containerClientSasUri;
         private readonly DocumentTranslationService translationService;
 
         /// <summary>
@@ -44,7 +47,7 @@ namespace DocumentTranslationService.Core
         /// </summary>
         /// <param name="translationService"></param>
         /// <param name="glossaryFiles"></param>
-        public Glossary(DocumentTranslationService translationService, List<string> glossaryFiles = null)
+        public Glossary(DocumentTranslationService translationService, List<string> glossaryFiles)
         {
             if ((glossaryFiles is null) || (glossaryFiles.Count == 0))
             {
@@ -108,11 +111,11 @@ namespace DocumentTranslationService.Core
             BlobContainerClient glossaryContainer = new(storageConnectionString, containerNameBase + "gls");
             await glossaryContainer.CreateIfNotExistsAsync();
             this.containerClient = glossaryContainer;
-            this.containerClientSasUri = containerClient.GenerateSasUri(BlobContainerSasPermissions.All, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
 
             //Do the upload
             Debug.WriteLine("START - glossary upload.");
             System.Threading.SemaphoreSlim semaphore = new(10); //limit the number of concurrent uploads
+            PlainUriGlossaries = new(Glossaries);
             int fileCounter = 0;
             long uploadSize = 0;
             List<Task> uploads = new();
@@ -124,9 +127,12 @@ namespace DocumentTranslationService.Core
                     using FileStream fileStream = File.OpenRead(glossary.Key);
                     BlobClient blobClient = new(translationService.StorageConnectionString, glossaryContainer.Name, DocumentTranslationBusiness.Normalize(glossary.Key));
                     uploads.Add(blobClient.UploadAsync(fileStream, true));
-                    var sasUriGlossaryBlob = blobClient.GenerateSasUri(BlobSasPermissions.All, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
+                    Uri sasUriGlossaryBlob = blobClient.GenerateSasUri(BlobSasPermissions.All, DateTimeOffset.UtcNow + TimeSpan.FromHours(5));
+                    Debug.WriteLine($"Glossary URI: {sasUriGlossaryBlob.AbsoluteUri}");
                     TranslationGlossary translationGlossary = new(sasUriGlossaryBlob, Path.GetExtension(glossary.Key)[1..].ToUpperInvariant());
                     Glossaries[glossary.Key] = translationGlossary;
+                    TranslationGlossary plainUriTranslationGlossary = new(blobClient.Uri, Path.GetExtension(glossary.Key)[1..].ToUpperInvariant());
+                    PlainUriGlossaries[glossary.Key] = plainUriTranslationGlossary;
                     fileCounter++;
                     uploadSize += new FileInfo(fileStream.Name).Length;
                     semaphore.Release();
