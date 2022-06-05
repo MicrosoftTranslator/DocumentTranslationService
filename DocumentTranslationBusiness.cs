@@ -199,7 +199,7 @@ namespace DocumentTranslationService.Core
                         sizeInBytes += new FileInfo(filename).Length;
                         semaphore.Release();
                     }
-                    catch (Exception ex) when (ex is AggregateException or Azure.RequestFailedException)
+                    catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or AggregateException or Azure.RequestFailedException)
                     {
                         logger.WriteLine($"Uploading file {filename} failed with {ex.Message}");
                         OnFileReadWriteError?.Invoke(this, ex.Message);
