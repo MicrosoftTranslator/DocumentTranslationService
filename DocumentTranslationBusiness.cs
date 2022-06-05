@@ -356,7 +356,7 @@ namespace DocumentTranslationService.Core
                 string directoryName;
                 if (string.IsNullOrEmpty(targetFolder)) directoryName = Path.GetDirectoryName(sourcefiles[0]) + Path.DirectorySeparatorChar + lang;
                 else
-                    if (targetFolder.Contains("*")) directoryName = targetFolder.Replace("*", lang);
+                    if (targetFolder.Contains('*')) directoryName = targetFolder.Replace("*", lang);
                 else
                         if (tolanguages.Length == 1) directoryName = targetFolder;
                 else directoryName = targetFolder + Path.DirectorySeparatorChar + lang;
@@ -563,9 +563,11 @@ namespace DocumentTranslationService.Core
         private async Task DeleteContainersAsync(string[] tolanguages)
         {
             logger.WriteLine("START - Container deletion.");
-            List<Task> deletionTasks = new();
-            //delete the containers of this run
-            deletionTasks.Add(TranslationService.ContainerClientSource.DeleteAsync());
+            List<Task> deletionTasks = new()
+            {
+                //delete the containers of this run
+                TranslationService.ContainerClientSource.DeleteAsync()
+            };
             foreach (string lang in tolanguages)
                 deletionTasks.Add(TranslationService.ContainerClientTargets[lang].DeleteAsync());
             deletionTasks.Add(glossary.DeleteAsync());
