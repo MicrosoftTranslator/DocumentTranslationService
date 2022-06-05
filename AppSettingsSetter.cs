@@ -45,11 +45,13 @@ namespace DocumentTranslationService.Core
             {
                 if (ex is FileNotFoundException || ex is DirectoryNotFoundException)
                 {
-                    DocTransAppSettings settings = new();
-                    settings.ConnectionStrings = new Connectionstrings();
-                    settings.AzureRegion = "global";
-                    settings.TextTransEndpoint = "https://api.cognitive.microsofttranslator.com/";
-                    settings.AzureResourceName = "https://*.cognitiveservices.azure.com/";
+                    DocTransAppSettings settings = new()
+                    {
+                        ConnectionStrings = new Connectionstrings(),
+                        AzureRegion = "global",
+                        TextTransEndpoint = "https://api.cognitive.microsofttranslator.com/",
+                        AzureResourceName = "https://*.cognitiveservices.azure.com/"
+                    };
                     settings.ConnectionStrings.StorageConnectionString = "DefaultEndpointsProtocol=https;AccountName=*";
                     return settings;
                 }
