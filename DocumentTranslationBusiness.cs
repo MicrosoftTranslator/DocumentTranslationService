@@ -225,9 +225,9 @@ namespace DocumentTranslationService.Core
             glossary = new(TranslationService, glossaryfiles);
             try
             {
-                var result = await glossary.UploadAsync(TranslationService.StorageConnectionString, containerNameBase);
+                (int, long) result = await glossary.UploadAsync(TranslationService.StorageConnectionString, containerNameBase);
             }
-            catch (System.IO.IOException ex)
+            catch (Exception ex)
             {
                 logger.WriteLine($"Glossaries upload failed with {ex.Message}");
                 OnFileReadWriteError?.Invoke(this, ex.Message);
