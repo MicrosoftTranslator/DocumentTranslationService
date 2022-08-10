@@ -182,6 +182,12 @@ namespace DocumentTranslationService.Core
                 Debug.WriteLine("Request failed: " + ex.Source + ": " + ex.Message);
                 throw new Exception(ex.Message);
             }
+            catch (System.InvalidOperationException ex)
+            {
+                Debug.WriteLine("Request failed: " + ex.Source + ": " + ex.Message);
+                throw new Exception(ex.Message);
+            }
+            await documentTranslationOperation.UpdateStatusAsync();
             Debug.WriteLine("Translation Request submitted. Status: " + documentTranslationOperation.Status);
             return documentTranslationOperation.Id;
         }

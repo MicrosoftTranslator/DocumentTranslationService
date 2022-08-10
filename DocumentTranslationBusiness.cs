@@ -428,6 +428,7 @@ namespace DocumentTranslationService.Core
         {
             Uri sourceUri = GenerateSasUriSource(sourceContainer, UseManagedIdentity);
             TranslationSource translationSource = new(sourceUri);
+            logger.WriteLine($"UseManagedIdentity: {UseManagedIdentity}");
             logger.WriteLine($"SourceURI: {sourceUri}");
             if (!(string.IsNullOrEmpty(fromlanguage)))
             {
