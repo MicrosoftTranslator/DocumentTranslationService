@@ -20,7 +20,7 @@ namespace DocumentTranslationService.Core
         /// Can retrieve the final target folder here
         /// </summary>
         public string TargetFolder { get; private set; }
- 
+
         /// <summary>
         /// Prevent deletion of storage container. For debugging.
         /// </summary>
@@ -190,7 +190,7 @@ namespace DocumentTranslationService.Core
                 foreach (var filename in sourcefiles)
                 {
                     await semaphore.WaitAsync();
-                    
+
                     BlobClient blobClient = new(TranslationService.StorageConnectionString, TranslationService.ContainerClientSource.Name, Normalize(filename));
                     try
                     {

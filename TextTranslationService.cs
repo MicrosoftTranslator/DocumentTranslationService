@@ -28,7 +28,7 @@ namespace DocumentTranslationService.Core
         private const int maxrequestsize = 5000;   //service size is 5000
 
         public static int Maxrequestsize { get => maxrequestsize; }
-        
+
         public enum ContentType { plain, HTML };
         #endregion
 
@@ -271,7 +271,7 @@ namespace DocumentTranslationService.Core
             string path = "/breaksentence?api-version=3.0";
             string params_ = "&language=" + languagecode;
             string uri = TextTransUri + path + params_;
-            object[] body = new object[] { new { Text = text.Substring(0, (text.Length < Maxrequestsize) ? text.Length : Maxrequestsize) } };
+            object[] body = new object[] { new { Text = text[..((text.Length < Maxrequestsize) ? text.Length : Maxrequestsize)] } };
             string requestBody = JsonSerializer.Serialize(body);
             List<int> resultList = new();
 

@@ -1,11 +1,10 @@
-﻿using Azure.Storage.Blobs;
+﻿using Azure.AI.Translation.Document;
+using Azure.Storage.Blobs;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading.Tasks;
-using System.Text.Json;
-using Azure.AI.Translation.Document;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace DocumentTranslationService.Core
 {

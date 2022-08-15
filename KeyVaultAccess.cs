@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
 
 namespace DocumentTranslationService.Core
 {
@@ -63,7 +63,7 @@ namespace DocumentTranslationService.Core
                         settings.AzureResourceName = kvSecret.Value.Value;
                         break;
                     case "StorageConnectionString":
-                        if (settings.ConnectionStrings is null) settings.ConnectionStrings = new();
+                        settings.ConnectionStrings ??= new();
                         settings.ConnectionStrings.StorageConnectionString = kvSecret.Value.Value;
                         break;
                     case "ResourceKey":

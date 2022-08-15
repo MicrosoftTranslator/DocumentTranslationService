@@ -9,7 +9,7 @@ namespace DocumentTranslationService.Core
 {
     partial class DocumentTranslationService
     {
-        
+
         /// <summary>
         /// Validate the credentials supplied as properties, and throw a CredentialsExceptions for the failing ones. 
         /// This is meant to be lightweight, but it is not free in terms of time and resources: The method makes

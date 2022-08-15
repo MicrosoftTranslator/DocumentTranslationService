@@ -17,16 +17,16 @@ namespace DocumentTranslationService
         }
 
         public override void OnSendingRequest(HttpMessage message)
+        {
+            if (message.Request.Method.Method == "POST")
             {
-                if (message.Request.Method.Method == "POST")
-                {
                 foreach (string s in flightStrings)
                 {
                     string st = s.Trim();
                     if (!string.IsNullOrEmpty(st))
                         message.Request.Uri.AppendQuery("flight", st);
                 }
-                }
             }
+        }
     }
 }

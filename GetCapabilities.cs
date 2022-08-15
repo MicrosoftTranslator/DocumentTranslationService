@@ -87,7 +87,7 @@ namespace DocumentTranslationService.Core
                 {
                     result = await documentTranslationClient.GetSupportedGlossaryFormatsAsync();
                 }
-                catch(Azure.RequestFailedException ex)
+                catch (Azure.RequestFailedException ex)
                 {
                     if (ex.Status == 401 || ex.Status == 403) throw new CredentialsException(ex.Message, ex);
                 }
