@@ -157,7 +157,7 @@ namespace DocumentTranslationService.Core
             {
                 sourceContainer = new(TranslationService.StorageConnectionString, containerNameBase + "src");
             }
-            catch (System.FormatException ex)
+            catch (Exception ex)
             {
                 logger.WriteLine(ex.Message + ex.InnerException?.Message);
                 OnContainerCreationFailure?.Invoke(this, ex.Message);
@@ -178,7 +178,16 @@ namespace DocumentTranslationService.Core
             #endregion
 
             #region Upload documents
-            await sourceContainerTask;
+            try
+            {
+                await sourceContainerTask;
+            }
+            catch (Exception ex)
+            {
+                logger.WriteLine(ex.Message + ex.InnerException?.Message);
+                OnContainerCreationFailure?.Invoke(this, ex.Message);
+                return;
+            }
             logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} END - container creation.");
             logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} START - Documents and glossaries upload.");
             OnUploadStart?.Invoke(this, EventArgs.Empty);
