@@ -119,7 +119,7 @@ namespace DocumentTranslationService.Core
             List<string> sourcefiles = new();
             foreach (string filename in filestotranslate)
             {
-                if (File.GetAttributes(filename) == FileAttributes.Directory)
+                if ((File.GetAttributes(filename) & FileAttributes.Directory) == FileAttributes.Directory)
                     foreach (var file in Directory.EnumerateFiles(filename))
                         sourcefiles.Add(file);
                 else sourcefiles.Add(filename);
