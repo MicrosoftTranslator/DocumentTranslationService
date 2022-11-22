@@ -11,6 +11,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 #endregion
 
@@ -64,7 +65,8 @@ namespace DocumentTranslationService.Core
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 string detectResult = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                return detectResult;
+                JsonNode jsonDom = JsonNode.Parse(detectResult);
+                return jsonDom[0]!["language"].ToJsonString();
             }
             else
             {
@@ -83,14 +85,21 @@ namespace DocumentTranslationService.Core
         }
 
 
+
         public class DetectResult
         {
-            public string Language { get; set; }
-            public float Score { get; set; }
-            public bool IsTranslationSupported { get; set; }
-            public bool IsTransliterationSupported { get; set; }
-            public AltTranslations[] Alternatives { get; set; }
+            public DetectResultElement[] _ { get; set; }
         }
+
+        public class DetectResultElement
+        {
+            public string language { get; set; }
+            public float score { get; set; }
+            public bool isTranslationSupported { get; set; }
+            public bool isTransliterationSupported { get; set; }
+        }
+
+
         public class AltTranslations
         {
             public string Language { get; set; }
