@@ -124,13 +124,14 @@ namespace DocumentTranslationService.Core
                         sourcefiles.Add(file);
                 else sourcefiles.Add(filename);
             }
-            List<string> discards;
+
             await initialize;
             #endregion
 
             #region Parameter checking
             if (TranslationService.Extensions.Count == 0)
                 throw new ArgumentNullException(nameof(TranslationService.Extensions), "List of translatable extensions cannot be null.");
+            List<string> discards;
             (sourcefiles, discards) = FilterByExtension(sourcefiles, TranslationService.Extensions);
             if (discards is not null)
             {
