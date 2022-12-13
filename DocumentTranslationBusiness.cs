@@ -67,6 +67,11 @@ namespace DocumentTranslationService.Core
         /// </summary>
         public event EventHandler<List<string>> OnFilesDiscarded;
 
+        /// <summary>
+        /// Fires if there were glossaries listed that were discarded.
+        /// </summary>
+        public event EventHandler<List<string>> OnGlossariesDiscarded;
+
         public event EventHandler<string> OnContainerCreationFailure;
 
         /// <summary>
@@ -233,6 +238,7 @@ namespace DocumentTranslationService.Core
             }
             //Upload Glossaries
             glossary = new(TranslationService, glossaryfiles);
+            glossary.OnGlossaryDiscarded += Glossary_OnGlossaryDiscarded;
             try
             {
                 (int, long) result = await glossary.UploadAsync(TranslationService.StorageConnectionString, containerNameBase);
@@ -432,6 +438,11 @@ namespace DocumentTranslationService.Core
             logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} Run: Exiting.");
             logger.Close();
             #endregion
+        }
+
+        private void Glossary_OnGlossaryDiscarded(object sender, List<string> e)
+        {
+            OnGlossariesDiscarded?.Invoke(this, e);
         }
 
         private DocumentTranslationInput GenerateInput(string fromlanguage, string[] tolanguages, BlobContainerClient sourceContainer, Dictionary<string, BlobContainerClient> targetContainers, Glossary glossary, bool UseManagedIdentity)

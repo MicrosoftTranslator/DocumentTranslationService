@@ -72,8 +72,17 @@ namespace DocumentTranslationService.Core
         {
             //Expand directory
             if (Glossaries is null) return (0, 0);
+            List<string> discards = new();
             foreach (var glossary in Glossaries)
             {
+                if (!File.Exists(glossary.Key))
+                {
+                    Debug.WriteLine($"Glossary file ignored: {glossary.Key}");
+                    discards.Add(glossary.Key);
+                    OnGlossaryDiscarded?.Invoke(this, discards);
+                    Glossaries = null;
+                    return (0, 0);
+                }
                 if (File.GetAttributes(glossary.Key) == FileAttributes.Directory)
                 {
                     Glossaries.Remove(glossary.Key);
@@ -84,7 +93,6 @@ namespace DocumentTranslationService.Core
                 }
             }
             //Remove files that don't match the allowed extensions
-            List<string> discards = new();
             foreach (var glossary in Glossaries)
             {
                 if (!(translationService.GlossaryExtensions.Contains(Path.GetExtension(glossary.Key))))
@@ -97,7 +105,7 @@ namespace DocumentTranslationService.Core
                 foreach (string fileName in discards)
                 {
                     Debug.WriteLine($"Glossary files ignored: {fileName}");
-                    if (OnGlossaryDiscarded is not null) OnGlossaryDiscarded(this, discards);
+                    OnGlossaryDiscarded?.Invoke(this, discards);
                 }
             //Exit if no files are left
             if (Glossaries.Count == 0)
@@ -147,10 +155,9 @@ namespace DocumentTranslationService.Core
         {
             if (Glossaries is not null)
             {
-                Azure.Response response;
                 try
                 {
-                    response = await containerClient.DeleteAsync();
+                    Azure.Response response = await containerClient.DeleteAsync();
                     return response;
                 }
                 catch (Azure.RequestFailedException ex)
