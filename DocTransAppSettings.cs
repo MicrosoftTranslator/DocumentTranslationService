@@ -51,6 +51,24 @@ namespace DocumentTranslationService.Core
                 else return true;
             }
         }
+        public bool UsingProxy
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(ProxyAddress?.Trim())) return false;
+                else if (ProxyUseDefaultCredentials) return true;
+                else return true;
+            }
+        }
+        /// <summary>
+        /// Whether to use user credentials when using a proxy
+        /// </summary>
+        public bool ProxyUseDefaultCredentials { get; set; }
+
+        /// <summary>
+        /// Proxy server address
+        /// </summary>
+        public string ProxyAddress { get; set; }
     }
 
     public class Connectionstrings

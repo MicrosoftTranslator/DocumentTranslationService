@@ -80,7 +80,7 @@ namespace DocumentTranslationService.Core
             request.Headers.Add("Ocp-Apim-Subscription-Key", subscriptionKey);
             if (azureRegion?.ToLowerInvariant() != "global") request.Headers.Add("Ocp-Apim-Subscription-Region", azureRegion);
             request.Content = new StringContent("[{ \"Text\": \"English\" }]", Encoding.UTF8, "application/json");
-            HttpClient client = new();
+            HttpClient client = HttpClientFactory.GetHttpClient();
             HttpResponseMessage response = await client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
                 throw new CredentialsException("Invalid key, or key does not match region.");
