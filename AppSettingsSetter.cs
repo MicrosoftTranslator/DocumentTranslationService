@@ -93,8 +93,13 @@ namespace DocumentTranslationService.Core
             string filename;
             if (OperatingSystem.IsWindows())
             {
-                Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName);
-                filename = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName + Path.DirectorySeparatorChar + AppSettingsFileName;
+                // appsettings.json can optionally be deployed along with application into application folder
+                filename = Path.GetDirectoryName(Environment.ProcessPath) + Path.DirectorySeparatorChar + AppSettingsFileName;
+                if (!File.Exists(filename))
+                {
+                    Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName);
+                    filename = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + Path.DirectorySeparatorChar + AppName + Path.DirectorySeparatorChar + AppSettingsFileName;
+                }
             }
             else
             {
