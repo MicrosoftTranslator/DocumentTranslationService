@@ -44,7 +44,7 @@ namespace DocumentTranslationService.Core
         {
             string uri = TextTransUri + "/detect?api-version=3.0";
             object[] body = new object[] { new { Text = input } };
-            using HttpClient client = new();
+            using HttpClient client = HttpClientFactory.GetHttpClient();
             using HttpRequestMessage request = new();
             client.Timeout = TimeSpan.FromSeconds(2);
             request.Method = HttpMethod.Post;
@@ -234,7 +234,7 @@ namespace DocumentTranslationService.Core
             string params_ = "&from=" + from + "&to=" + to;
             string uri = TextTransUri + path + params_;
             object[] body = new object[] { new { Text = text } };
-            using var client = new HttpClient();
+            using var client = HttpClientFactory.GetHttpClient();
             using var request = new HttpRequestMessage();
             request.Method = HttpMethod.Post;
             request.RequestUri = new Uri(uri);
@@ -284,7 +284,7 @@ namespace DocumentTranslationService.Core
             string requestBody = JsonSerializer.Serialize(body);
             List<int> resultList = new();
 
-            using (HttpClient client = new())
+            using (HttpClient client = HttpClientFactory.GetHttpClient())
             using (HttpRequestMessage request = new())
             {
                 request.Method = HttpMethod.Post;
@@ -394,7 +394,7 @@ namespace DocumentTranslationService.Core
             IList<string> resultList = new List<string>();
             while (retrycount > 0)
             {
-                var client = new HttpClient();
+                var client = HttpClientFactory.GetHttpClient();
                 var request = new HttpRequestMessage();
                 client.Timeout = TimeSpan.FromSeconds(20);
                 request.Method = HttpMethod.Post;

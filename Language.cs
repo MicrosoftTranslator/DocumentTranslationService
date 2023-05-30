@@ -71,7 +71,7 @@ namespace DocumentTranslationService.Core
                 request.RequestUri = showExperimental
                     ? new Uri($"{textTransUri}/languages?api-version=3.0&scope=translation&flight=experimental")
                     : new Uri($"{textTransUri}/languages?api-version=3.0&scope=translation");
-                HttpClient client = new();
+                HttpClient client = HttpClientFactory.GetHttpClient();
                 HttpResponseMessage response = await client.SendAsync(request);
 
                 if (response.IsSuccessStatusCode)
