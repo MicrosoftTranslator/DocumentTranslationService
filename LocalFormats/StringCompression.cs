@@ -1,5 +1,9 @@
-﻿using System.IO.Compression;
+﻿using System;
+using System.IO;
+using System.IO.Compression;
 using System.Text;
+
+///Credit: https://stackoverflow.com/questions/7343465/compression-decompression-string-with-c-sharp
 
 namespace SRT2Markdown
 {
