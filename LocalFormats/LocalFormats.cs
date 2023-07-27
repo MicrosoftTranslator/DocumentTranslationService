@@ -1,10 +1,6 @@
 ﻿using SRT2Markdown;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DocumentTranslationService.LocalFormats
 {
@@ -24,6 +20,9 @@ namespace DocumentTranslationService.LocalFormats
         } };
     }
 
+    /// <summary>
+    /// Holds the information about a format that can be converted to and from Markdown.
+    /// </summary>
     public struct FormatInfo
     {
         public string Name { get; set; }
