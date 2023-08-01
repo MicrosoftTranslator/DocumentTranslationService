@@ -134,8 +134,8 @@ namespace SRT2Markdown
         /// <summary>
         /// Determine if a line is a sequence number. SRT style sequence numbers are one integer on a line by itself.
         /// </summary>
-        /// <param name="line"></param>
-        /// <param name="sequenceNumber"></param>
+        /// <param name="line">A line of the SRT file</param>
+        /// <param name="sequenceNumber">If there is a single number on the line, return it.</param>
         /// <returns></returns>
         private static bool IsSequenceNumber(string line, out int sequenceNumber)
         {

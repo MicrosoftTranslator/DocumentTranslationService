@@ -9,25 +9,14 @@ namespace DocumentTranslationService.LocalFormats
     /// Underlying assumption is that the format translated by the service is Markdown.
     /// You supply the functions to convert the local format to Markdown and from Markdown.
     /// </summary>
-    public class LocalFormats
+    public static class LocalFormats
     {
-        public readonly List<FormatInfo> Formats = new() { new FormatInfo()
+        public static readonly List<LocalDocumentTranslationFileFormat> Formats = new() { new LocalDocumentTranslationFileFormat()
         {
-            Name = "SRT",
-            Extensions = { ".srt" },
+            Format = "SubRip",
+            FileExtensions = new() { ".srt" },
             ConvertToMarkdown = SRTMarkdownConverter.ConvertToMarkdown,
             ConvertFromMarkdown = SRTMarkdownConverter.ConvertToSRT
         } };
-    }
-
-    /// <summary>
-    /// Holds the information about a format that can be converted to and from Markdown.
-    /// </summary>
-    public struct FormatInfo
-    {
-        public string Name { get; set; }
-        public List<string> Extensions { get; set; }
-        public Delegate ConvertToMarkdown { get; set; }
-        public Delegate ConvertFromMarkdown { get; set; }
     }
 }
