@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -155,6 +156,8 @@ namespace DocumentTranslationService.Core
             if (!TranslationService.Languages.ContainsKey(tolanguages[0])) throw new ArgumentException("Invalid 'to' language.", nameof(tolanguages));
             #endregion
 
+            List<string> sourcefiles_prep = LocalFormats.LocalFormats.PreprocessSourceFiles(sourcefiles);
+
             #region Create the containers
             logger.WriteLine($"{stopwatch.Elapsed.TotalSeconds} START - container creation.");
             string containerNameBase = "doctr" + Guid.NewGuid().ToString();
@@ -202,7 +205,7 @@ namespace DocumentTranslationService.Core
             List<Task> uploadTasks = new();
             using (System.Threading.SemaphoreSlim semaphore = new(100))
             {
-                foreach (var filename in sourcefiles)
+                foreach (var filename in sourcefiles_prep)
                 {
                     await semaphore.WaitAsync();
 
@@ -411,6 +414,17 @@ namespace DocumentTranslationService.Core
                 }
                 this.TargetFolder = directoryName;
             }
+            //Process the local file formats after download.
+            try
+            {
+                LocalFormats.LocalFormats.PostprocessTargetFiles(Directory.GetFiles(TargetFolder).ToList());
+            }
+            catch (Exception ex)
+            {
+                logger.WriteLine("Postprocessing error: " + ex.Message);
+                OnFileReadWriteError?.Invoke(this, "Postprocessing failure: " + ex.Message);
+            }
+
             #endregion
             #region final
             OnDownloadComplete?.Invoke(this, (count, sizeInBytes));
