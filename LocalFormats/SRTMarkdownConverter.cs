@@ -59,14 +59,13 @@ namespace SRT2Markdown
         public static string ConvertToSRT(string markdownText)
         {
             string srtText = string.Empty;
-            string[] lines = markdownText.Split('\n');
+            List<string> lines = SplitIntoLines(markdownText);
             string currentText = string.Empty;
             foreach (string line in lines)
             {
-                string line1 = line.Trim();
-                if (line1.StartsWith("<!--"))
+                if (line.StartsWith("<!--"))
                 {
-                    CaptionInfo captionInfo = JsonSerializer.Deserialize<CaptionInfo>(StringCompression.Decompress(line1[5..^3]));
+                    CaptionInfo captionInfo = JsonSerializer.Deserialize<CaptionInfo>(StringCompression.Decompress(line[5..^3]));
                     srtText += $"{captionInfo.SequenceNumber}\n{captionInfo.TimeCode}\n";
                     //Write out the caption string split into lines
                     srtText += SplitByLength(currentText, captionInfo.StringLengths);
@@ -74,9 +73,37 @@ namespace SRT2Markdown
                     currentText = string.Empty;
                     continue;
                 }
-                currentText += line1 + " ";
+                else
+                {
+                    currentText += line + " ";
+                }
             }
             return srtText;
+        }
+
+        /// <summary>
+        /// Split markdown text into lines. Split on newline or comment start. This is designed to solve the problem that after
+        /// translation the comment may not be on its separate line anymore.
+        /// </summary>
+        /// <param name="markdownText">Markdown text to be processed</param>
+        /// <returns>List of strings containing the intended lines of the Markdown text</returns>
+        private static List<string> SplitIntoLines(string markdownText)
+        {
+            List<string> lines = new();
+            int index = 0;
+            while (index < markdownText.Length)
+            {
+                int nextIndex = Math.Min(markdownText.IndexOf(@"<!--", index), markdownText.IndexOf(@"-->", index) + 3);
+                if (index >= 1) index--;
+                if (nextIndex == -1)
+                {
+                    lines.Add(markdownText[index..].Trim());
+                    break;
+                }
+                lines.Add(markdownText[index..nextIndex].Trim());
+                index = nextIndex + 1;
+            }
+            return lines;
         }
 
         /// <summary>
@@ -88,12 +115,14 @@ namespace SRT2Markdown
         /// <returns></returns>
         private static string SplitByLength(string currentText, List<int> stringLengths)
         {
+            if (string.IsNullOrEmpty(currentText)) return string.Empty;
             if (stringLengths.Count <= 1) return currentText + "\n";
             string result = string.Empty;
-            foreach (int length in stringLengths)
+            for (int i = 0; i < stringLengths.Count - 1; i++)
             {
-                int forwardIndex = length;
-                int backwardIndex = length;
+                int length = stringLengths[i];
+                int forwardIndex = Math.Min(length, currentText.Length);
+                int backwardIndex = Math.Max(0, currentText.Length - length);
                 while (forwardIndex < currentText.Length && !char.IsWhiteSpace(currentText[forwardIndex]) && !char.IsPunctuation(currentText[forwardIndex]))
                 {
                     forwardIndex++;
@@ -114,7 +143,7 @@ namespace SRT2Markdown
                     break;
                 }
             }
-            return result;
+            return string.Concat(result, currentText, "\n");
         }
 
 
