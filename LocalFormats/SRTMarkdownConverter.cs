@@ -8,15 +8,18 @@ namespace SRT2Markdown
     {
         /// <summary>
         /// Convert SRT to Markdown. The SRT markup is encoded in comments. The encoding itself is a JSON array of a CaptionInfo object in Base64 format.
-        /// The lines of a single utterance are combined into a single line (Microsoft does not combine lines of the markdown, as is required.)
+        /// The lines of a single caption are combined into a single line (Microsoft does not combine lines of the markdown, as is required.)
         /// </summary>
         /// <param name="srtLines">The content of an SRT file in string array form.</param>
         /// <returns>Markdown document with comments</returns>
         public static string ConvertToMarkdown(string[] srtLines)
         {
+            ///TODO: This currently only combines the lines from a single caption. However, often a sentence continues over multiple captions.
+            ///It would be better to combine multiple captions and translate as a complete sentence after sent end punc is found, and then split them
+            ///out again over multiple captions after translation. 
             string markdownText = string.Empty;
             string currentText = string.Empty;
-            CaptionInfo captionInfo = new();
+            SRTCaptionInfo captionInfo = new();
             foreach (string line in srtLines)
             {
                 if (IsSequenceNumber(line, out int sequenceNumber))
@@ -65,7 +68,7 @@ namespace SRT2Markdown
             {
                 if (line.StartsWith("<!--"))
                 {
-                    CaptionInfo captionInfo = JsonSerializer.Deserialize<CaptionInfo>(StringCompression.Decompress(line[5..^3]));
+                    SRTCaptionInfo captionInfo = JsonSerializer.Deserialize<SRTCaptionInfo>(StringCompression.Decompress(line[5..^3]));
                     srtText += $"{captionInfo.SequenceNumber}\n{captionInfo.TimeCode}\n";
                     //Write out the caption string split into lines
                     srtText += SplitByLength(currentText, captionInfo.StringLengths);

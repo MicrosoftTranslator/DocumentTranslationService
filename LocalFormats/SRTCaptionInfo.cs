@@ -9,7 +9,7 @@ namespace SRT2Markdown
     /// <summary>
     /// Holds the attributes of a single caption for SRT/VTT files.
     /// </summary>
-    internal struct CaptionInfo
+    internal struct SRTCaptionInfo
     {
         /// <summary>
         /// Holds the sequence number of the caption
@@ -32,7 +32,7 @@ namespace SRT2Markdown
         /// </summary>
         public bool Continuous { get; set; }
 
-        public CaptionInfo()
+        public SRTCaptionInfo()
         {
             SequenceNumber = 0;
             TimeCode = string.Empty;

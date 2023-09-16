@@ -73,9 +73,11 @@ namespace DocumentTranslationService.LocalFormats
                         string markdown = File.ReadAllText(filename);
                         string newFilename = filename[..filename.LastIndexOf('.')];
                         File.WriteAllText(newFilename, format.ConvertFromMarkdown(markdown));
-                        #if !DEBUG
+                        //#if !DEBUG
+                        //Delete the temporary files
                         File.Delete(filename);
-                        #endif
+                        File.Delete(Path.Combine(Path.GetTempPath(), Path.GetFileName(filename)));
+                        //#endif
                     }
                     else throw new Exception($"No conversion function found for {filename}, but listed as local format.");
                 }
