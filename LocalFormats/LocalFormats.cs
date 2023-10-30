@@ -20,10 +20,10 @@ namespace DocumentTranslationService.LocalFormats
         /// </summary>
         public static readonly List<LocalDocumentTranslationFileFormat> Formats = new() { new LocalDocumentTranslationFileFormat()
         {
-            Format = "SubRip",
-            FileExtensions = new() { ".srt" },
-            ConvertToMarkdown = SRTMarkdownConverter.ConvertToMarkdown,
-            ConvertFromMarkdown = SRTMarkdownConverter.ConvertToSRT
+                Format = "SubRip",
+                FileExtensions = new() { ".srt" },
+                ConvertToMarkdown = SRTMarkdownConverter.ConvertToMarkdown,
+                ConvertFromMarkdown = SRTMarkdownConverter.ConvertToSRT
         } };
 
         /// <summary>
@@ -145,12 +145,12 @@ namespace DocumentTranslationService.LocalFormats
             int lastPeriodIndex = input.LastIndexOf('.');
             int secondToLastPeriodIndex = input.LastIndexOf('.', lastPeriodIndex - 1);
 
-            if(lastPeriodIndex == -1)
+            if (lastPeriodIndex == -1)
             {
                 // If there is no period, return null.
                 return null;
             }
-                                                      
+
             if (secondToLastPeriodIndex == -1)
             {
                 // If there is only one period or none, return null.

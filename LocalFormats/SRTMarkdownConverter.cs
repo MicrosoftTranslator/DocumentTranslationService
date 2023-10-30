@@ -158,8 +158,10 @@ namespace SRT2Markdown
         /// <returns>Whether the line contains an SRT style time code.</returns>
         private static bool IsTimeCode(string line)
         {
-            string timeCodePattern = @"\d{2}:\d{2}:\d{2},\d{3}\s-->\s\d{2}:\d{2}:\d{2},\d{3}";
-
+            if (!line.Contains("-->")) return false;
+            ///This pattern is meant to match the time code format of SRT files and of VTT files.
+            ///VTT uses the US decimal separator and allows hours to be optional
+            string timeCodePattern = @"(\d{2}:){1,2}\d{2}[,.]\d{3}\s-->\s(\d{2}:){1,2}\d{2}[,.]\d{3}";
             return System.Text.RegularExpressions.Regex.IsMatch(line, timeCodePattern, System.Text.RegularExpressions.RegexOptions.Compiled);
         }
 
