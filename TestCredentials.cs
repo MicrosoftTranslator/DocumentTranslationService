@@ -71,6 +71,10 @@ namespace DocumentTranslationService.Core
             {
                 throw new CredentialsException("Document Translation Endpoint: " + ex.Message, ex);
             }
+            catch (Exception ex)
+            {
+                throw new CredentialsException("Document Translation Endpoint: " + ex.Message, ex);
+            }
         }
 
         private static async Task TryCredentialsKey(string subscriptionKey, string azureRegion, string TextTransUri)
@@ -81,9 +85,17 @@ namespace DocumentTranslationService.Core
             if (azureRegion?.ToLowerInvariant() != "global") request.Headers.Add("Ocp-Apim-Subscription-Region", azureRegion);
             request.Content = new StringContent("[{ \"Text\": \"English\" }]", Encoding.UTF8, "application/json");
             HttpClient client = HttpClientFactory.GetHttpClient();
-            HttpResponseMessage response = await client.SendAsync(request);
-            if (!response.IsSuccessStatusCode)
-                throw new CredentialsException("Invalid key, or key does not match region.");
+            try
+            {
+                client.Timeout = TimeSpan.FromSeconds(15);
+                HttpResponseMessage response = await client.SendAsync(request);
+                if (!response.IsSuccessStatusCode)
+                    throw new CredentialsException("Invalid key, or key does not match region.");
+            }
+            catch (Exception ex)
+            {
+                throw new CredentialsException("Text Translation Endpoint: " + ex.Message, ex);
+            }
         }
 
         private async Task TryPaidSubscription()
@@ -99,7 +111,11 @@ namespace DocumentTranslationService.Core
             }
             catch (Azure.RequestFailedException ex)
             {
-                throw new CredentialsException("Subscription Type: " + ex.Message);
+                throw new CredentialsException("Subscription Type: " + ex.Message, ex);
+            }
+            catch (Exception ex)
+            {
+                throw new CredentialsException("Subscription Type: " + ex.Message, ex);
             }
         }
     }
