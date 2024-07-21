@@ -24,9 +24,5 @@ namespace DocumentTranslationService.Core
         public KeyVaultAccessException(string message, Exception innerException) : base(message, innerException)
         {
         }
-
-        protected KeyVaultAccessException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
     }
 }

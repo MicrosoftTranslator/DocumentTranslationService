@@ -24,9 +24,5 @@ namespace DocumentTranslationService.Core
         public InvalidCategoryException(string message, Exception innerException) : base(message, innerException)
         {
         }
-
-        protected InvalidCategoryException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
     }
 }
