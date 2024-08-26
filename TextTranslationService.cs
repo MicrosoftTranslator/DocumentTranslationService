@@ -7,7 +7,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -26,7 +25,8 @@ namespace DocumentTranslationService.Core
 
         public event EventHandler RetryingEvent;
 
-        private const int maxrequestsize = 5000;   //service size is 5000
+        //https://learn.microsoft.com/en-us/azure/ai-services/Translator/service-limits
+        private const int maxrequestsize = 50000;   //service max request size is 50000
 
         public static int Maxrequestsize { get => maxrequestsize; }
 
@@ -43,7 +43,7 @@ namespace DocumentTranslationService.Core
         public async Task<string> DetectAsync(string input)
         {
             string uri = TextTransUri + "/detect?api-version=3.0";
-            object[] body = new object[] { new { Text = input } };
+            object[] body = [new { Text = input }];
             using HttpClient client = HttpClientFactory.GetHttpClient();
             using HttpRequestMessage request = new();
             client.Timeout = TimeSpan.FromSeconds(2);
@@ -91,21 +91,16 @@ namespace DocumentTranslationService.Core
             public DetectResultElement[] _ { get; set; }
         }
 
+        /// <summary>
+        /// This class is a mirror of the service's language detection response.
+        /// Naming rule violation is an artifact of the service naming of the class elements.
+        /// </summary>
         public class DetectResultElement
         {
             public string language { get; set; }
             public float score { get; set; }
             public bool isTranslationSupported { get; set; }
             public bool isTransliterationSupported { get; set; }
-        }
-
-
-        public class AltTranslations
-        {
-            public string Language { get; set; }
-            public float Score { get; set; }
-            public bool IsTranslationSupported { get; set; }
-            public bool IsTransliterationSupported { get; set; }
         }
 
         /// <summary>
@@ -117,9 +112,9 @@ namespace DocumentTranslationService.Core
         public async Task<bool> IsCategoryValidAsync(string category)
         {
             if (string.IsNullOrEmpty(category)) return true;
-            if (category.ToLowerInvariant() == "general") return true;
-            if (category.ToLowerInvariant() == "generalnn") return true;
-            if (category.ToLowerInvariant() == "tech") return true;
+            if (category.Equals("general", StringComparison.InvariantCultureIgnoreCase)) return true;
+            if (category.Equals("generalnn", StringComparison.InvariantCultureIgnoreCase)) return true;
+            if (category.Equals("tech", StringComparison.InvariantCultureIgnoreCase)) return true;
 
             bool returnvalue = true;
 
@@ -127,7 +122,7 @@ namespace DocumentTranslationService.Core
             {
                 try
                 {
-                    string[] teststring = { "Test" };
+                    string[] teststring = ["Test"];
                     string remembercategory = Category;
                     Task<string[]> translateTask = TranslateTextAsyncInternal(teststring, "en", "he", category, ContentType.plain);
                     await translateTask.ConfigureAwait(false);
@@ -152,7 +147,7 @@ namespace DocumentTranslationService.Core
         /// <returns>List of strings, each one smaller than maxrequestsize</returns>
         private async Task<List<string>> SplitStringAsync(string text, string languagecode)
         {
-            List<string> result = new();
+            List<string> result = [];
             int previousboundary = 0;
             if (text.Length <= Maxrequestsize)
             {
@@ -199,8 +194,7 @@ namespace DocumentTranslationService.Core
         /// <returns></returns>
         public async Task<string> TranslateStringAsync(string text, string from, string to, ContentType contentType = ContentType.plain)
         {
-            string[] vs = new string[1];
-            vs[0] = text;
+            string[] vs = [text];
             string[] result = await TranslateTextAsync(vs, from, to, contentType);
             try
             {
@@ -233,7 +227,7 @@ namespace DocumentTranslationService.Core
             string path = "/dictionary/lookup?api-version=3.0";
             string params_ = "&from=" + from + "&to=" + to;
             string uri = TextTransUri + path + params_;
-            object[] body = new object[] { new { Text = text } };
+            object[] body = [new { Text = text }];
             using var client = HttpClientFactory.GetHttpClient();
             using var request = new HttpRequestMessage();
             request.Method = HttpMethod.Post;
@@ -256,7 +250,7 @@ namespace DocumentTranslationService.Core
             if (text.Length > maxrequestsize)
             {
                 List<string> splits = await SplitStringAsync(text, languagecode).ConfigureAwait(false);
-                List<int> resultlist = new();
+                List<int> resultlist = [];
                 foreach (string str in splits)
                 {
                     List<int> toadd = await BreakSentencesInternalAsync(str, languagecode).ConfigureAwait(false);
@@ -280,9 +274,9 @@ namespace DocumentTranslationService.Core
             string path = "/breaksentence?api-version=3.0";
             string params_ = "&language=" + languagecode;
             string uri = TextTransUri + path + params_;
-            object[] body = new object[] { new { Text = text[..((text.Length < Maxrequestsize) ? text.Length : Maxrequestsize)] } };
+            object[] body = [new { Text = text[..((text.Length < Maxrequestsize) ? text.Length : Maxrequestsize)] }];
             string requestBody = JsonSerializer.Serialize(body);
-            List<int> resultList = new();
+            List<int> resultList = [];
 
             using (HttpClient client = HttpClientFactory.GetHttpClient())
             using (HttpRequestMessage request = new())
@@ -299,7 +293,7 @@ namespace DocumentTranslationService.Core
                 {
                     Debug.WriteLine("The detected language is '{0}'. Confidence is: {1}.", o.DetectedLanguage.Language, o.DetectedLanguage.Score);
                     Debug.WriteLine("The first sentence length is: {0}", o.SentLen[0]);
-                    resultList = o.SentLen.ToList();
+                    resultList = [.. o.SentLen];
                 }
             }
             return resultList;
@@ -325,21 +319,20 @@ namespace DocumentTranslationService.Core
             }
             if (translateindividually)
             {
-                List<string> resultlist = new();
+                List<string> resultlist = [];
                 foreach (string text in texts)
                 {
                     List<string> splitstring = await SplitStringAsync(text, from).ConfigureAwait(false);
                     string linetranslation = string.Empty;
                     foreach (string innertext in splitstring)
                     {
-                        string[] str = new string[1];
-                        str[0] = innertext;
+                        string[] str = [innertext];
                         string[] innertranslation = await TranslateTextAsyncInternal(str, from, to, Category, contentType).ConfigureAwait(false);
                         linetranslation += innertranslation[0];
                     }
                     resultlist.Add(linetranslation);
                 }
-                return resultlist.ToArray();
+                return [.. resultlist];
             }
             else
             {
@@ -384,14 +377,14 @@ namespace DocumentTranslationService.Core
             string uri = TextTransUri + path + params_;
 
 
-            ArrayList requestAL = new();
+            ArrayList requestAL = [];
             foreach (string text in texts)
             {
                 requestAL.Add(new { Text = text });
             }
             string requestJson = JsonSerializer.Serialize(requestAL);
 
-            IList<string> resultList = new List<string>();
+            IList<string> resultList = [];
             while (retrycount > 0)
             {
                 var client = HttpClientFactory.GetHttpClient();
@@ -442,8 +435,7 @@ namespace DocumentTranslationService.Core
                             {
                                 try
                                 {
-                                    string[] totranslate = new string[1];
-                                    totranslate[0] = texts[i];
+                                    string[] totranslate = [texts[i]];
                                     string[] result = new string[1];
                                     result = await TranslateTextAsyncInternal(totranslate, from, to, category, contentType, 2).ConfigureAwait(false);
                                     resultList.Add(result[0]);
@@ -454,7 +446,7 @@ namespace DocumentTranslationService.Core
                                     resultList.Add(texts[i]);
                                 }
                             }
-                            return resultList.ToArray();
+                            return [.. resultList];
                         }
                         else
                         {
@@ -497,7 +489,7 @@ namespace DocumentTranslationService.Core
                 break;
             }
 
-            return resultList.ToArray();
+            return [.. resultList];
         }
         #endregion
     }
