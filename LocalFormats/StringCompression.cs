@@ -5,7 +5,7 @@ using System.Text;
 
 ///Credit: https://stackoverflow.com/questions/7343465/compression-decompression-string-with-c-sharp
 
-namespace SRT2Markdown
+namespace DocumentTranslationService.LocalFormats
 {
     public static class StringCompression
     {

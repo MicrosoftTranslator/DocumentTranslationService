@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SRT2Markdown
+namespace DocumentTranslationService.LocalFormats
 {
     /// <summary>
     /// Holds the attributes of a single caption for SRT/VTT files.
@@ -16,12 +16,12 @@ namespace SRT2Markdown
         /// Sequence numbers in SRT files start at 1
         /// </summary>
         public int SequenceNumber { get; set; }
-        
+
         /// <summary>
         /// Holds the time code of the caption
         /// </summary>
         public string TimeCode { get; set; }
-        
+
         /// <summary>
         /// Denotes the number of lines in the caption and their lengths
         /// </summary>
@@ -36,7 +36,7 @@ namespace SRT2Markdown
         {
             SequenceNumber = 0;
             TimeCode = string.Empty;
-            StringLengths = new();
+            StringLengths = [];
             Continuous = true;
         }
 

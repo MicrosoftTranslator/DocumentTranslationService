@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System;
 
-namespace SRT2Markdown
+namespace DocumentTranslationService.LocalFormats
 {
     public static class SRTMarkdownConverter
     {
@@ -92,7 +92,7 @@ namespace SRT2Markdown
         /// <returns>List of strings containing the intended lines of the Markdown text</returns>
         private static List<string> SplitIntoLines(string markdownText)
         {
-            List<string> lines = new();
+            List<string> lines = [];
             int index = 0;
             while (index < markdownText.Length)
             {
